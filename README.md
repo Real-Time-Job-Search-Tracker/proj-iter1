@@ -1,5 +1,6 @@
 # FlowTrack
 
+
 This project is a submission for the "Engineering Software-as-a-Service" (Fall 2025) course, Group 11.
 
 ## 1\. Team Members
@@ -13,51 +14,159 @@ This project is a submission for the "Engineering Software-as-a-Service" (Fall 2
 
 The modern job search is fragmented and requires unsustainable manual tracking. **FlowTrack** solves this by using the **employer's final "Apply" URL** as a unique anchor for each application.
 
-Our platform automatically parses key metadata and feeds every application into a **live Sankey diagram**. This flow-first visualization replaces static lists, allowing users to instantly see bottlenecks and track progress from *Applied* to *Offer*. The system is built on **Ruby on Rails** with TDD/BDD practices.
+Our platform automatically parses key metadata and feeds every application into a **live Sankey diagram**. This flow-first visualization replaces static lists, allowing users to instantly see bottlenecks and track progress from *Applied* to *Offer*.
 
-## 3\. Live Deployment (Heroku)
+## 3\. Tech Stack
+
+  * **Framework:** Ruby on Rails (MVC)
+  * **Database:** PostgreSQL
+  * **Testing:** RSpec (TDD) & Cucumber (BDD)
+  * **Deployment:** Heroku
+
+## 4\. Live Deployment (Heroku)
 
 The live SaaS prototype is deployed to Heroku:
 
 `[INSERT YOUR HEROKU DEPLOYMENT LINK HERE]`
 
-## 4\. GitHub Repository
+## 5\. GitHub Repository
 
 The source code is available on GitHub:
 
 `[INSERT YOUR GITHUB REPOSITORY LINK HERE]`
 
-## 5\. Instructions to Run and Test
+## 6\. Local Development Instructions
 
-### Local Setup
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+  * A specific Ruby version (e.g., as defined in `.ruby-version`)
+  * Bundler
+  * PostgreSQL (must be running)
+
+### Setup
 
 1.  **Clone the repository:**
+
     ```bash
     git clone [INSERT YOUR GITHUB REPOSITORY LINK HERE]
     cd flowtrack
     ```
+
 2.  **Install dependencies:**
+    This command installs all the required gems specified in the `Gemfile`.
+
     ```bash
     bundle install
     ```
-3.  **Setup the database:**
+
+3.  **Create and setup the database:**
+    This creates the development and test databases and runs all migrations.
+
     ```bash
     rails db:create
     rails db:migrate
     ```
-4.  **Run the application:**
+
+4.  **(Optional) Seed the database:**
+    If your project has seed data, run this command:
+
+    ```bash
+    rails db:seed
+    ```
+
+5.  **Run the application:**
+    This starts the Rails server (Puma) on `localhost:3000`.
+
     ```bash
     rails s
     ```
-    Access the app at `http://localhost:3000`.
+
+    You can now access the app at `http://localhost:3000`.
 
 ### Testing
 
-1.  **Run RSpec (Unit Tests):**
+1.  **Run RSpec (Unit/Model/Controller Tests):**
+    This executes all tests in the `spec/` directory.
+
     ```bash
     bundle exec rspec
     ```
-2.  **Run Cucumber (User Stories / Feature Tests):**
+
+2.  **Run Cucumber (User Stories / Acceptance Tests):**
+    This executes all features in the `features/` directory.
+
     ```bash
     bundle exec cucumber
     ```
+
+## 7\. Heroku Deployment Instructions
+
+### Prerequisites
+
+  * You must have a Heroku account.
+  * You must have the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) installed.
+
+### Initial Deployment
+
+1.  **Log in to the Heroku CLI:**
+
+    ```bash
+    heroku login
+    ```
+
+2.  **Create a new Heroku application:**
+    You can either let Heroku pick a name or specify your own.
+
+    ```bash
+    # Let Heroku pick a name
+    heroku create
+
+    # Or specify a name (must be unique)
+    heroku create your-app-name-here
+    ```
+
+    This also adds a new `heroku` git remote to your local repository.
+
+3.  **Provision a PostgreSQL Database:**
+    Our app requires a database. This command adds the free `hobby-dev` tier.
+
+    ```bash
+    heroku addons:create heroku-postgresql:hobby-dev
+    ```
+
+4.  **Push your code to Heroku:**
+    This pushes your `main` branch to Heroku. Heroku automatically detects it's a Rails app, runs `bundle install`, and precompiles assets.
+
+    ```bash
+    git push heroku main
+    ```
+
+5.  **Run database migrations on Heroku:**
+    Your code is deployed, but the database is empty. This command runs the `db:migrate` task on the Heroku server.
+
+    ```bash
+    heroku run rails db:migrate
+    ```
+
+6.  **(Optional) Seed the production database:**
+    If you need to seed your live database, run this command:
+
+    ```bash
+    heroku run rails db:seed
+    ```
+
+7.  **Open your application:**
+    This will open your newly deployed application in your web browser.
+
+    ```bash
+    heroku open
+    ```
+
+### Subsequent Deploys
+
+For any future updates, you only need to:
+
+1.  Push your new code: `git push heroku main`
+2.  Run migrations *if* you added any new ones: `heroku run rails db:migrate`
