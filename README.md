@@ -1,6 +1,5 @@
 # FlowTrack
 
-
 This project is a submission for the "Engineering Software-as-a-Service" (Fall 2025) course, Group 11.
 
 ## 1\. Team Members
@@ -33,7 +32,7 @@ The live SaaS prototype is deployed to Heroku:
 
 The source code is available on GitHub:
 
-`[INSERT YOUR GITHUB REPOSITORY LINK HERE]`
+`https://github.com/Real-Time-Job-Search-Tracker/proj-iter1`
 
 ## 6\. Local Development Instructions
 
@@ -50,8 +49,8 @@ Before you begin, ensure you have the following installed:
 1.  **Clone the repository:**
 
     ```bash
-    git clone [INSERT YOUR GITHUB REPOSITORY LINK HERE]
-    cd flowtrack
+    git clone https://github.com/Real-Time-Job-Search-Tracker/proj-iter1.git
+    cd proj-iter1
     ```
 
 2.  **Install dependencies:**
