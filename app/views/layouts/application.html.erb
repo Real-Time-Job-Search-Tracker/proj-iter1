@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JobTracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <!-- 样式：确保加载你的 application.css -->
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+
+    <!-- Plotly（如果你是通过 CDN 引）-->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js" defer></script>
+
+    <!-- 脚本：确保加载 application.js；加 defer 防止阻塞；加 data-turbo-track 以在热更新时重载 -->
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+  </head>
+
+  <!-- 给 body 加上 .app，保证你的 CSS 命中 -->
+  <body class="app">
+    <nav class="nav glass">
+      <div class="brand">JobTracker<span class="dot">•</span></div>
+      <div class="nav-actions"><a href="#">Overview</a></div>
+    </nav>
+
+    <%= yield %>
+
+    <footer class="footer">Built with Rails</footer>
+  </body>
+</html>
