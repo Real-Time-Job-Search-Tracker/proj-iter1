@@ -1,0 +1,57 @@
+<!-- app/views/jobs/index.html.erb -->
+
+<div class="container">
+
+  <div class="card">
+    <div class="panel-header">
+      <h2>Add an application</h2>
+    </div>
+
+    <form id="pasteForm" class="pastebox">
+      <input id="jobUrl"      type="url"  placeholder="Paste a job URL (Lever/Greenhouse/…)" />
+      <input id="jobCompany"  type="text" placeholder="Company (optional)" />
+      <input id="jobTitle"    type="text" placeholder="Title (optional)" />
+
+      <select id="jobStatus" class="input">
+        <option value="Applied" selected>Applied</option>
+        <option value="Round1">Round1</option>
+        <option value="Round2">Round2</option>
+        <option value="Interview">Interview</option>
+        <option value="Offer">Offer</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Declined">Declined</option>
+      </select>
+
+      <button type="submit">Add</button>
+    </form>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="section card">
+    <h2>Funnel (Sankey)</h2>
+    <div id="sankey"></div>
+  </div>
+
+  <div class="section card">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin:0">Applications</h2>
+      <span id="countLabel" class="muted"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="appsTable">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>URL</th>
+            <th>Status</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

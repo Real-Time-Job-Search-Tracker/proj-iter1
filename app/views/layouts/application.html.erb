@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <%= csrf_meta_tags %>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= content_for?(:title) ? yield(:title) : "Job Tracker" %></title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_importmap_tags %>
+
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body class="app">
+  <header class="nav glass">
+    <div class="brand">JobTracker<span class="dot">•</span></div>
+    <nav class="nav-actions">
+      <%= link_to "Overview", root_path %>
+    </nav>
+  </header>
+
+  <main class="container">
+    <%= yield %>
+  </main>
+
+  <footer class="footer">© <%= Time.current.year %> JobTracker</footer>
+</body>
+</html>
