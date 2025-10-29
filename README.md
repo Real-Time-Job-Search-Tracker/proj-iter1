@@ -5,7 +5,7 @@ This project is a submission for the "Engineering Software-as-a-Service" (Fall 2
 ## 1\. Team Members
 
   * You Wu (yw4643)
-  * Jiawen Lyu (j17257)
+  * Jiawen Lyu (jl7257)
   * Zhijing Wu (zw3155)
   * Robert Fornos (rf2830)
 
