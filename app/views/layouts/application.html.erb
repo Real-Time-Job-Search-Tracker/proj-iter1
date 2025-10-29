@@ -1,31 +1,32 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>JobTracker</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <%= csrf_meta_tags %>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= content_for?(:title) ? yield(:title) : "Job Tracker" %></title>
 
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
 
-    <!-- 样式：确保加载你的 application.css -->
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_importmap_tags %>
 
-    <!-- Plotly（如果你是通过 CDN 引）-->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js" defer></script>
-
-    <!-- 脚本：确保加载 application.js；加 defer 防止阻塞；加 data-turbo-track 以在热更新时重载 -->
-    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
-  </head>
-
-  <!-- 给 body 加上 .app，保证你的 CSS 命中 -->
-  <body class="app">
-    <nav class="nav glass">
-      <div class="brand">JobTracker<span class="dot">•</span></div>
-      <div class="nav-actions"><a href="#">Overview</a></div>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body class="app">
+  <header class="nav glass">
+    <div class="brand">JobTracker<span class="dot">•</span></div>
+    <nav class="nav-actions">
+      <%= link_to "Overview", root_path %>
     </nav>
+  </header>
 
+  <main class="container">
     <%= yield %>
+  </main>
 
-    <footer class="footer">Built with Rails</footer>
-  </body>
+  <footer class="footer">© <%= Time.current.year %> JobTracker</footer>
+</body>
 </html>

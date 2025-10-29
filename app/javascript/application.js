@@ -44,7 +44,6 @@ function hookForm() {
         body: JSON.stringify(payload),
       });
 
-      // reset
       if (urlI) urlI.value = "";
       if (coI) coI.value = "";
       if (tiI) tiI.value = "";
@@ -66,7 +65,6 @@ async function loadApps() {
   const count = byId("countLabel");
   if (!tbody) return;
 
-  // one-time event delegation for row buttons
   if (!tbody._boundClick) {
     tbody._boundClick = true;
     tbody.addEventListener("click", async (e) => {
@@ -97,20 +95,22 @@ async function loadApps() {
   }
 
   try {
-    const data = await getJSON("/applications", {
+    const dataRaw = await getJSON("/applications", {
       headers: { Accept: "application/json" },
     });
 
+    const apps = Array.isArray(dataRaw) ? dataRaw : (dataRaw?.applications ?? []);
+
     tbody.innerHTML = "";
 
-    if (!Array.isArray(data) || data.length === 0) {
+    if (!apps.length) {
       tbody.innerHTML =
         '<tr><td colspan="4" class="muted">No applications yet</td></tr>';
       if (count) count.textContent = "0 items";
       return;
     }
 
-    for (const row of data) {
+    for (const row of apps) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row.company ?? ""}</td>
@@ -124,7 +124,7 @@ async function loadApps() {
         </td>`;
       tbody.appendChild(tr);
     }
-    if (count) count.textContent = `${data.length} items`;
+    if (count) count.textContent = `${apps.length} items`;
   } catch (err) {
     console.error("[loadApps] failed:", err);
     tbody.innerHTML =
@@ -241,9 +241,10 @@ async function loadSankey() {
     }
   }
 }
+
 // ---------- boot ----------
 function boot() {
-  if (window.__jobtrackerBooted) return;   
+  if (window.__jobtrackerBooted) return;
   window.__jobtrackerBooted = true;
 
   hookForm();
@@ -254,3 +255,4 @@ function boot() {
 
 document.addEventListener("turbo:load", boot);
 document.addEventListener("DOMContentLoaded", boot);
+Object.assign(window, { loadApps, loadSankey, boot });

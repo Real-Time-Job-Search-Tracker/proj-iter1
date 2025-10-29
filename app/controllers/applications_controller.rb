@@ -1,17 +1,25 @@
 # app/controllers/applications_controller.rb
+require "set"
+require "json"
+require "uri"
+require "time"
+
 class ApplicationsController < ApplicationController
-  # 前后端分离接口：避免 CSRF 阻断 JSON 调用
   protect_from_forgery with: :null_session
 
   GHOST_DAYS = (ENV["GHOST_DAYS"] || "21").to_i
 
-  # ------------ CRUD ------------
   def index
-    apps = JobApplication.order(created_at: :desc)
-    respond_to do |fmt|
-      fmt.json { render json: apps.as_json(only: [:id, :url, :company, :title, :status]) }
-      fmt.html { redirect_to jobs_path }  # 直接回到主页面，避免渲出不期望的 HTML
-    end
+    apps = Application.order(created_at: :desc)
+
+    rows =
+      if apps.exists?
+        apps.select(:id, :url, :company, :title, :status).map(&:attributes)
+      else
+        load_fake_jobs.map { |h| h.slice(:id, :url, :company, :title, :status) }
+      end
+
+    render json: rows
   end
 
   def create
@@ -25,17 +33,10 @@ class ApplicationsController < ApplicationController
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
-    # 初始状态一并保存
-    app = JobApplication.new(url: url, company: company, title: title, status: status)
+    app = Application.new(url: url, company: company, title: title, status: status)
 
     if app.save
-      # 如果模型支持 push_status!（用于写入 history），尝试记录一次
-      begin
-        app.push_status!(status) if status.present?
-      rescue NoMethodError
-        # 如果没有 push_status! 就忽略，不影响主流程
-      end
-
+      app.push_status!(status) if app.respond_to?(:push_status!) && status.present?
       render json: app.as_json(only: [:id, :url, :company, :title, :status]), status: :created
     else
       render json: { error: app.errors.full_messages.join(", ") }, status: 422
@@ -43,16 +44,15 @@ class ApplicationsController < ApplicationController
   end
 
   def update
-    app = JobApplication.find_by(id: params[:id])
+    app = Application.find_by(id: params[:id])
     return render(json: { error: "not found" }, status: 404) unless app
 
-    # 优先状态流转：保持你原有的历史追踪逻辑
-    if params[:status].present?
-      app.push_status!((params[:status]))  # 会同时更新当前 status（按你的模型实现）
+    if params[:status].present? && app.respond_to?(:push_status!)
+      app.push_status!(params[:status])
       return render json: app.as_json(only: [:id, :url, :company, :title, :status])
     end
 
-    if app.update(app_update_params)
+    if app.update(params.permit(:company, :title, :url, :status))
       render json: app.as_json(only: [:id, :url, :company, :title, :status])
     else
       render json: { error: app.errors.full_messages.join(", ") }, status: 422
@@ -60,32 +60,89 @@ class ApplicationsController < ApplicationController
   end
 
   def destroy
-    app = JobApplication.find_by(id: params[:id])
-    return head :no_content unless app
-    app.destroy!
+    app = Application.find_by(id: params[:id])
+    app&.destroy!
     head :no_content
   end
 
-  # ------------ Sankey 统计 ------------
   def stats
-    apps = JobApplication.all
+    apps = Application.all
 
-    round_labels = Set.new
-    apps.find_each do |a|
-      Array(a.history).each do |h|
+    if apps.exists?
+      round_labels = Set.new
+      apps.find_each do |a|
+        Array(a.history).each do |h|
+          lab = stage_label(h["status"])
+          round_labels << lab if lab.start_with?("Round")
+        end
+      end
+      rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
+
+      nodes = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+      paths = []
+      apps.find_each { |a| paths << canonical_path(a.history, a.status) }
+      links = build_links_from_paths(paths, nodes)
+
+      render json: { nodes: nodes, links: links }
+    else
+      fakes  = load_fake_jobs
+      rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
+      nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+      paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
+      links  = build_links_from_paths(paths, nodes)
+      render json: { nodes: nodes, links: links }
+    end
+  end
+
+  private
+
+  def load_fake_jobs
+    path = Rails.root.join("db", "fake_jobs.json")
+    return [] unless File.exist?(path)
+    arr = JSON.parse(File.read(path)) rescue []
+    arr = [] unless arr.is_a?(Array)
+
+    arr.each_with_index.map do |x, i|
+      h = x.is_a?(Hash) ? x : {}
+      url     = (h["url"] || h[:url]).to_s
+      company = (h["company"] || h[:company]).to_s
+      title   = (h["title"] || h[:title]).to_s
+      status  = (h["status"] || h[:status]).to_s.presence || "Applied"
+      hist_raw = (h["history"] || h[:history])
+
+      history = Array(hist_raw).map do |e|
+        if e.is_a?(Hash)
+          { "status" => (e["status"] || e[:status] || e["s"] || e[:s]).to_s,
+            "ts"     => (e["ts"] || e[:ts] || e["t"] || e[:t] || Time.now.utc.iso8601).to_s }
+        else
+          { "status" => e.to_s, "ts" => Time.now.utc.iso8601 }
+        end
+      end
+
+      company = company.presence || infer_company_from_url(url)
+      title   = title.presence   || "(unknown title)"
+
+      { id: i + 1, url: url, company: company, title: title, status: status, history: history }
+    end
+  end
+
+  def collect_rounds_from_histories(histories)
+    labs = Set.new
+    histories.each do |hist|
+      Array(hist).each do |h|
         lab = stage_label(h["status"])
-        round_labels << lab if lab.start_with?("Round")
+        labs << lab if lab.start_with?("Round")
       end
     end
-    rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
+    labs.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
+  end
 
-    nodes = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-    idx   = nodes.each_with_index.to_h
-
+  def build_links_from_paths(paths, nodes)
+    idx = nodes.each_with_index.to_h
     counts = Hash.new(0)
     klass  = {}
 
-    add = lambda do |u, v, cls|
+    add = ->(u, v, cls) do
       su, sv = idx[u], idx[v]
       return unless su && sv
       key = [su, sv]
@@ -93,8 +150,7 @@ class ApplicationsController < ApplicationController
       klass[key] = cls
     end
 
-    apps.find_each do |a|
-      path = canonical_path(a.history, a.status)
+    paths.each do |path|
       path.each_cons(2) do |u, v|
         cls =
           if u == "Applications" && v.start_with?("Round") then "apps_to_round"
@@ -112,17 +168,8 @@ class ApplicationsController < ApplicationController
     end
 
     source, target, value, cls = [], [], [], []
-    counts.each do |(i, j), w|
-      source << i; target << j; value << w; cls << klass[[i, j]]
-    end
-
-    render json: { nodes: nodes, links: { source: source, target: target, value: value, cls: cls } }
-  end
-
-  private
-
-  def app_update_params
-    params.permit(:company, :title, :url, :status)
+    counts.each { |(i, j), w| source << i; target << j; value << w; cls << klass[[i, j]] }
+    { source: source, target: target, value: value, cls: cls }
   end
 
   def infer_company_from_url(url)
@@ -134,18 +181,16 @@ class ApplicationsController < ApplicationController
       seg = URI.parse(url).path.split("/").reject(&:blank?).first
       return seg.tr("-", " ").capitalize if seg
     end
-    host.split(".")[-2].to_s.capitalize
+    host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
   rescue
     "Unknown"
   end
 
-  # 将各种口径的状态映射到规范阶段
   def stage_label(raw)
     s = raw.to_s.strip.downcase
     return "Applications" if s.blank? || s.include?("applied") || s.include?("application")
     if s =~ /\bround\s*(\d+)\b/
-      n = Regexp.last_match(1)
-      return "Round#{n}"
+      return "Round#{Regexp.last_match(1)}"
     end
     if s =~ /(interview|screen|assessment|challenge|take[-\s]?home|phone|onsite|oa|online\s*assessment)/
       return "Round1"
@@ -193,7 +238,6 @@ class ApplicationsController < ApplicationController
     if last_ts && (Time.now.utc - last_ts) / 86_400.0 >= GHOST_DAYS
       mono << "Ghosted" unless %w[Accepted Declined Ghosted].include?(mono.last)
     end
-
     mono
   end
 end

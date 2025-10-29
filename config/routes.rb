@@ -5,6 +5,6 @@ Rails.application.routes.draw do
   resources :applications, only: [:index, :create, :update, :destroy]
   get "/applications/stats", to: "applications#stats"
 
-  get "jobs/inspect"
-  get "jobs/create"
+  # create should be POST (keep if you need it)
+  resources :jobs, only: [:create]
 end
