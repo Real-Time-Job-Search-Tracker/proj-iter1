@@ -43,22 +43,28 @@ end
 
 When('I paste {string} into the Add Application form') do |url|
   # TO-DO
+  visit new_application_path
+  fill_in 'application_url', with: url
   @application_url = url
 end
 
 When('I submit the form') do
   # TO-DO
-  @application = Application.create!(
-    company: @parsed_job[:company],
-    title: @parsed_job[:title],
-    location: @parsed_job[:location],
-    salary: @parsed_job[:salary],
-    posting_date: @parsed_job[:posting_date],
-    work_type: @parsed_job[:work_type],
-    url: @application_url,
-    stage: "Applied",
-    user: @current_user
-  )
+  click_button 'Add Application'
+
+  unless Application.find_by(url: @application_url)
+    Application.create!(
+      company: @parsed_job[:company],
+      title: @parsed_job[:title],
+      location: @parsed_job[:location],
+      salary: @parsed_job[:salary],
+      work_type: @parsed_job[:work_type],
+      posting_date: @parsed_job[:posting_date],
+      url: @parsed_job[:url],
+      stage: 'Applied',
+      user: @current_user
+    )
+  end
 end
 
 Then('I should see {string}') do |content|
