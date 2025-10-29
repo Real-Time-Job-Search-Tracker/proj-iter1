@@ -5,7 +5,7 @@ require "uri"
 require "time"
 
 class ApplicationsController < ApplicationController
-  protect_from_forgery with: :null_session
+  skip_forgery_protection if: -> { request.format.json? }
 
   GHOST_DAYS = (ENV["GHOST_DAYS"] || "21").to_i
 
@@ -65,25 +65,39 @@ class ApplicationsController < ApplicationController
     head :no_content
   end
 
+  # def stats
+  #   apps = Application.all
+
+  #   if apps.exists?
+  #     round_labels = Set.new
+  #     apps.find_each do |a|
+  #       Array(a.history).each do |h|
+  #         lab = stage_label(h["status"])
+  #         round_labels << lab if lab.start_with?("Round")
+  #       end
+  #     end
+  #     rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
+
+  #     nodes = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+  #     paths = []
+  #     apps.find_each { |a| paths << canonical_path(a.history, a.status) }
+  #     links = build_links_from_paths(paths, nodes)
+
+  #     render json: { nodes: nodes, links: links }
+  #   else
+  #     fakes  = load_fake_jobs
+  #     rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
+  #     nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+  #     paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
+  #     links  = build_links_from_paths(paths, nodes)
+  #     render json: { nodes: nodes, links: links }
+  #   end
+  # end
   def stats
     apps = Application.all
 
     if apps.exists?
-      round_labels = Set.new
-      apps.find_each do |a|
-        Array(a.history).each do |h|
-          lab = stage_label(h["status"])
-          round_labels << lab if lab.start_with?("Round")
-        end
-      end
-      rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
-
-      nodes = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-      paths = []
-      apps.find_each { |a| paths << canonical_path(a.history, a.status) }
-      links = build_links_from_paths(paths, nodes)
-
-      render json: { nodes: nodes, links: links }
+      render json: Sankey::Builder.call(apps)
     else
       fakes  = load_fake_jobs
       rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
@@ -93,6 +107,8 @@ class ApplicationsController < ApplicationController
       render json: { nodes: nodes, links: links }
     end
   end
+
+
 
   private
 
