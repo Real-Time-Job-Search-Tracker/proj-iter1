@@ -82,8 +82,21 @@ If PostgreSQL is not already installed and running, use the following commands:
     ```bash
     rails db:seed
     ```
+6.  **Create Users**
+    This starts the Rails server (Puma) on `localhost:3000`.
 
-6.  **Run the application:**
+    ```bash
+    rails console
+    ```
+    You can add as many users as you want.
+    ```bash
+    User.create!(email: "email@example.com", password: "password", password_confirmation: "password")
+    ```
+    ```bash
+   exit
+    ```
+
+7.  **Run the application:**
     This starts the Rails server (Puma) on `localhost:3000`.
 
     ```bash
