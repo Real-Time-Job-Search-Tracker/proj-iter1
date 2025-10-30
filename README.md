@@ -44,6 +44,14 @@ Before you begin, ensure you have the following installed:
   * Bundler
   * PostgreSQL (must be running)
 
+
+If PostgreSQL is not already installed and running, use the following commands:
+ 
+ ```bash
+ brew install postgresql
+ brew services start postgresql
+ ```
+
 ### Setup
 
 1.  **Clone the repository:**
@@ -62,11 +70,6 @@ Before you begin, ensure you have the following installed:
 
 3.  **Create and setup the database:**
     This creates the development and test databases and runs all migrations.
-    ```bash
-    #if not installed
-    brew install postgresql
-    berw services start postgresql
-    ```
 
     ```bash
     rails db:create
