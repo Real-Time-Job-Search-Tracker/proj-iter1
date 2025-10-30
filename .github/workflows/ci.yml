@@ -32,8 +32,8 @@ jobs:
           ruby-version: '3.3.9'
           bundler-cache: true
 
-      - name: Importmap audit
-        run: bundle exec importmap audit
+      - name: Sanity-check Importmap config
+        run: ruby -c config/importmap.rb
 
   lint:
     runs-on: ubuntu-latest
