@@ -1,89 +1,65 @@
 require 'nokogiri'
 require 'open-uri'
 
-Given('the parser will return job details for {string}') do |url|
-  # TO-DO
-  begin
-    # Open the URL and parse HTML
-    html = URI.open(url) { |f| f.read }
-    doc = Nokogiri::HTML(html)
+Given("the parser will return job details for {string}") do |url|
+  html = <<~HTML
+    <html>
+      <head>
+        <title>Senior Engineer – ACME</title>
+        <meta property="og:site_name" content="ACME Corp">
+      </head>
+      <body></body>
+    </html>
+  HTML
 
-    # Extract info
-    company   = doc.at_css('.company')&.text&.strip || "Unknown Company"
-    title     = doc.at_css('.job-title')&.text&.strip || "Unknown Title"
-    location  = doc.at_css('.location')&.text&.strip || "Remote"
-    salary    = doc.at_css('.salary')&.text&.strip || "Not listed"
-    work_type = doc.at_css('.work-type')&.text&.strip || "Full-time"
-    posting_date = Date.today
-
-    # Store parsed job
-    @parsed_job = {
-      company: company,
-      title: title,
-      location: location,
-      salary: salary,
-      work_type: work_type,
-      posting_date: posting_date,
-      url: url
-    }
-  rescue => e
-    # If parsing fails, use dummy values to prevent test crash
-    puts "Warning: Could not parse URL: #{url} (#{e.message})"
-    @parsed_job = {
-      company: "Test Company",
-      title: "Software Engineer",
-      location: "Remote",
-      salary: "100000",
-      work_type: "Full-time",
-      posting_date: Date.today,
-      url: url
-    }
-  end
+  stub_request(:get, url).to_return(status: 200, body: html, headers: { "Content-Type" => "text/html" })
 end
 
-When('I paste {string} into the Add Application form') do |url|
-  # TO-DO
+When("I paste {string} into the Add Application form") do |the_url|
   visit new_application_path
-  fill_in 'application_url', with: url
-  @application_url = url
+
+  candidate_fields = [ "application_url", "url", "Final apply URL", "#application_url", "input[name='application[url]']" ]
+
+  field = candidate_fields.find { |name_or_label| page.has_field?(name_or_label, disabled: false, wait: 5) }
+
+  raise 'Could not find the URL field on the Add Application form. Available fields: ' + candidate_fields.join(', ') unless field
+
+  fill_in field, with: the_url
 end
 
-When('I submit the form') do
-  # TO-DO
-  click_button 'Add Application'
-
-  unless Application.find_by(url: @application_url)
-    Application.create!(
-      company: @parsed_job[:company],
-      title: @parsed_job[:title],
-      location: @parsed_job[:location],
-      salary: @parsed_job[:salary],
-      work_type: @parsed_job[:work_type],
-      posting_date: @parsed_job[:posting_date],
-      url: @parsed_job[:url],
-      stage: 'Applied',
-      user: @current_user
-    )
+When("I submit the form") do
+  if page.has_button?("Add Application", wait: 0.5)
+    click_button "Add Application"
+  elsif page.has_button?("Add", wait: 0.5)
+    click_button "Add"
+  else
+    find("input[type=submit], button[type=submit]", match: :first).click
   end
 end
 
 Then('I should see {string}') do |content|
-  # TO-DO
   expect(page).to have_content(content)
 end
 
-Then('I should see {string} within the applications list') do |company_name|
-  # TO-DO
-  expect(Application.where(company: company_name).exists?).to be true
+Then("I should see {string} within the applications list") do |company|
+  visit applications_path unless page.has_css?("#applications, #applications_list, .applications, .apps", wait: 0.5)
+
+  containers = [ "#applications", "#applications_list", ".applications", ".apps" ]
+  if (container = containers.find { |sel| page.has_css?(sel) })
+    within(container) { expect(page).to have_text(company) }
+  else
+    # fall back to whole page if the page itself *is* the list
+    expect(page).to have_text(company)
+  end
 end
 
 Then('I should see the stage {string} for {string}') do |stage, company|
-  # TO-DO
-  app = Application.find_by(company: company)
-  expect(app.stage).to eq(stage)
+  #
+  app = JobApplication.find_by!(company: company)
+  expect(app.status).to eq(stage)
 end
 
 Then('I should not see {string}') do |content|
-  # TO-DO
+  #
   expect(page).not_to have_content(content)
 end

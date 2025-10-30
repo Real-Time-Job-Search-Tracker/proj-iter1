@@ -10,28 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_29_005233) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "pg_catalog.plpgsql"
-
-  create_table "applications", force: :cascade do |t|
-    t.string "company"
+ActiveRecord::Schema[8.1].define(version: 2025_10_29_221456) do
+  create_table "job_applications", force: :cascade do |t|
+    t.string "company", null: false
     t.datetime "created_at", null: false
-    t.jsonb "history", default: []
-    t.string "status"
-    t.string "title"
+    t.json "history", default: [], null: false
+    t.string "status", default: "Applied", null: false
+    t.string "title", null: false
     t.datetime "updated_at", null: false
-    t.text "url"
-    t.index ["url"], name: "index_applications_on_url", unique: true
+    t.string "url", null: false
+    t.index ["url"], name: "index_job_applications_on_url", unique: true
   end
 
-  create_table "job_applications", force: :cascade do |t|
-    t.string "company"
+  create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.json "history"
-    t.string "status"
-    t.string "title"
+    t.string "email"
+    t.string "password_digest"
     t.datetime "updated_at", null: false
-    t.string "url"
+    t.index ["email"], name: "index_users_on_email", unique: true
   end
 end

@@ -36,3 +36,7 @@
 
 # macOS
 .DS_Store
+
+db/*.sqlite3
+
+coverage/

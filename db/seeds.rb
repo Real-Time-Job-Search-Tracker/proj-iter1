@@ -11,7 +11,7 @@
 require 'json'
 
 path = Rails.root.join("db/fake_jobs.json")
-puts "📂 Loading fake data from #{path}"  
+puts "📂 Loading fake data from #{path}"
 
 data = JSON.parse(File.read(path))
 

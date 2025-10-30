@@ -1,0 +1,13 @@
+<%= form_with url: sign_in_path, method: :post, id: "login_form", data: { test: "login" }, local: true do %>
+  <div>
+    <%= label_tag :email, "Email" %>
+    <%= email_field_tag :email, nil, id: "login_email", data: { test: "login_email" } %>
+  </div>
+
+  <div>
+    <%= label_tag :password, "Password" %>
+    <%= password_field_tag :password, nil, id: "login_password", data: { test: "login_password" } %>
+  </div>
+
+  <%= submit_tag "Sign in", data: { test: "login_submit" } %>
+<% end %>
