@@ -27,6 +27,7 @@
 /tmp/storage/*
 !/tmp/storage/
 !/tmp/storage/.keep
+!config/initializers/solid_queue.rb
 
 /public/assets
 
