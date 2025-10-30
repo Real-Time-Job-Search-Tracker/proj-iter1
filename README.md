@@ -49,6 +49,8 @@ If PostgreSQL is not already installed and running, use the following commands:
  
  ```bash
  brew install postgresql
+ ```
+ ```bash
  brew services start postgresql
  ```
 
@@ -93,7 +95,7 @@ If PostgreSQL is not already installed and running, use the following commands:
     User.create!(email: "email@example.com", password: "password", password_confirmation: "password")
     ```
     ```bash
-   exit
+    exit
     ```
 
 7.  **Run the application:**
