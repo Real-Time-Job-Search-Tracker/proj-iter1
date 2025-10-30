@@ -12,6 +12,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+      
+      - name: Debug Gemfile in CI
+        run: |
+          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
+          ruby -v
+          bundle -v
+          echo '--- Gemfile (first 200 lines) ---'
+          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
+          echo '--- Duplicate gem scan ---'
+          ruby - <<'RUBY'
+          g = Hash.new { |h,k| h[k] = [] }
+          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
+            if l =~ /^\s*gem\s+["']([^"']+)["']/
+              g[$1] << i+1
+            end
+          end
+          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
+          RUBY
+
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -30,6 +50,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+      
+      - name: Debug Gemfile in CI
+        run: |
+          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
+          ruby -v
+          bundle -v
+          echo '--- Gemfile (first 200 lines) ---'
+          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
+          echo '--- Duplicate gem scan ---'
+          ruby - <<'RUBY'
+          g = Hash.new { |h,k| h[k] = [] }
+          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
+            if l =~ /^\s*gem\s+["']([^"']+)["']/
+              g[$1] << i+1
+            end
+          end
+          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
+          RUBY
+
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -46,6 +86,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Debug Gemfile in CI
+        run: |
+          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
+          ruby -v
+          bundle -v
+          echo '--- Gemfile (first 200 lines) ---'
+          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
+          echo '--- Duplicate gem scan ---'
+          ruby - <<'RUBY'
+          g = Hash.new { |h,k| h[k] = [] }
+          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
+            if l =~ /^\s*gem\s+["']([^"']+)["']/
+              g[$1] << i+1
+            end
+          end
+          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
+          RUBY
+
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
