@@ -54,6 +54,13 @@ group :development, :test do
 
   # Linting (used by your CI RuboCop job)
   gem "rubocop-rails-omakase", require: false
+
+  gem "cucumber-rails", require: false
+  gem "database_cleaner-active_record"
+  gem "capybara"
+  gem "selenium-webdriver"
+  gem "webmock"
+  gem "simplecov", require: false
 end
 
 # Cucumber + system test stack
