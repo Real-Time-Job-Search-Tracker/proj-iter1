@@ -14,5 +14,9 @@ test:
   database: db/test.sqlite3
 
 production:
-  <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  primary:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+  cable:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
