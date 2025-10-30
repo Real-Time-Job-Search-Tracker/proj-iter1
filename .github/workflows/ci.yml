@@ -8,108 +8,42 @@ on:
 jobs:
   scan_ruby:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Debug Gemfile in CI
-        run: |
-          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
-          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
-          ruby -v
-          bundle -v
-          echo '--- Gemfile (first 200 lines) ---'
-          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
-          echo '--- Duplicate gem scan ---'
-          ruby - <<'RUBY'
-          g = Hash.new { |h,k| h[k] = [] }
-          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
-            if l =~ /^\s*gem\s+["']([^"']+)["']/
-              g[$1] << i+1
-            end
-          end
-          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
-          RUBY
-
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3.9'
           bundler-cache: true
 
-      - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
-      
-      - name: Scan for known security vulnerabilities in gems used
-        run: bin/bundler-audit
-      
+      - name: Brakeman (static Rails scan)
+        run: bundle exec brakeman --no-pager
+
+      - name: Bundler Audit (advisory DB)
+        run: |
+          bundle exec bundler-audit update
+          bundle exec bundler-audit check --ignore CVE-0000-0000
+
   scan_js:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Debug Gemfile in CI
-        run: |
-          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
-          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
-          ruby -v
-          bundle -v
-          echo '--- Gemfile (first 200 lines) ---'
-          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
-          echo '--- Duplicate gem scan ---'
-          ruby - <<'RUBY'
-          g = Hash.new { |h,k| h[k] = [] }
-          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
-            if l =~ /^\s*gem\s+["']([^"']+)["']/
-              g[$1] << i+1
-            end
-          end
-          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
-          RUBY
-
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3.9'
           bundler-cache: true
 
-      - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
+      - name: Importmap audit
+        run: bundle exec importmap audit
 
   lint:
     runs-on: ubuntu-latest
     env:
       RUBOCOP_CACHE_ROOT: tmp/rubocop
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Debug Gemfile in CI
-        run: |
-          echo "Ref: $GITHUB_REF  Sha: $GITHUB_SHA  Branch: ${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
-          echo "BUNDLE_GEMFILE=${BUNDLE_GEMFILE:-Gemfile}"
-          ruby -v
-          bundle -v
-          echo '--- Gemfile (first 200 lines) ---'
-          sed -n '1,200p' "${BUNDLE_GEMFILE:-Gemfile}"
-          echo '--- Duplicate gem scan ---'
-          ruby - <<'RUBY'
-          g = Hash.new { |h,k| h[k] = [] }
-          File.readlines(ENV['BUNDLE_GEMFILE'] || 'Gemfile').each_with_index do |l,i|
-            if l =~ /^\s*gem\s+["']([^"']+)["']/
-              g[$1] << i+1
-            end
-          end
-          g.select { |_, v| v.size > 1 }.each { |k,v| puts "#{k}: #{v.join(", ")}" }
-          RUBY
-
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3.9'
           bundler-cache: true
 
       - name: Prepare RuboCop cache
@@ -122,6 +56,5 @@ jobs:
           restore-keys: |
             rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-
 
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
-
+      - name: RuboCop
+        run: bundle exec rubocop -f github
