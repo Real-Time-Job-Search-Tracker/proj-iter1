@@ -26,7 +26,7 @@ Our platform automatically parses key metadata and feeds every application into 
 
 The live SaaS prototype is deployed to Heroku:
 
-`[INSERT YOUR HEROKU DEPLOYMENT LINK HERE]`
+`https://flowtrack-7b01930f8bf1.herokuapp.com`
 
 ## 5\. GitHub Repository
 
@@ -62,20 +62,25 @@ Before you begin, ensure you have the following installed:
 
 3.  **Create and setup the database:**
     This creates the development and test databases and runs all migrations.
+    ```bash
+    #if not installed
+    brew install postgresql
+    berw services start postgresql
+    ```
 
     ```bash
     rails db:create
     rails db:migrate
     ```
 
-4.  **(Optional) Seed the database:**
+5.  **(Optional) Seed the database:**
     If your project has seed data, run this command:
 
     ```bash
     rails db:seed
     ```
 
-5.  **Run the application:**
+6.  **Run the application:**
     This starts the Rails server (Puma) on `localhost:3000`.
 
     ```bash
