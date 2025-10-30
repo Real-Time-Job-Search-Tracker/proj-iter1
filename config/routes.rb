@@ -1,10 +1,15 @@
-# config/routes.rb
 Rails.application.routes.draw do
-  root "jobs#index"
+  get    "/sign_in",  to: "sessions#new",     as: :sign_in
+  post   "/sign_in",  to: "sessions#create"
+  delete "/sign_out", to: "sessions#destroy", as: :sign_out
 
-  resources :applications, only: [:index, :create, :update, :destroy]
+  get  "/dashboard", to: "dashboard#show", as: :dashboard
+  root "dashboard#show"
+
+  resources :applications, only: [ :index, :create, :update, :destroy, :new ]
   get "/applications/stats", to: "applications#stats"
 
-  # create should be POST (keep if you need it)
-  resources :jobs, only: [:create]
+  resources :jobs, only: [ :index ]
+
+  get "jobs/inspect"
 end

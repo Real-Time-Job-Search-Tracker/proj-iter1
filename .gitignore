@@ -36,3 +36,10 @@
 
 # macOS
 .DS_Store
+
+db/*.sqlite3
+
+coverage/
+# Ignore key files for decrypting credentials and more.
+/config/credentials/*.key
+

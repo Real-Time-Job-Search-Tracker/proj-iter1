@@ -1,4 +1,3 @@
-# app/controllers/applications_controller.rb
 require "set"
 require "json"
 require "uri"
@@ -10,107 +9,128 @@ class ApplicationsController < ApplicationController
   GHOST_DAYS = (ENV["GHOST_DAYS"] || "21").to_i
 
   def index
-    apps = Application.order(created_at: :desc)
-
-    rows =
-      if apps.exists?
-        apps.select(:id, :url, :company, :title, :status).map(&:attributes)
-      else
-        load_fake_jobs.map { |h| h.slice(:id, :url, :company, :title, :status) }
-      end
-
-    render json: rows
+    apps = JobApplication.order(created_at: :desc)
+    respond_to do |fmt|
+      fmt.json { render json: apps.as_json(only: %i[id url company title status]) }
+      fmt.html { redirect_to root_path }
+    end
   end
 
   def create
     url = params[:url].to_s.strip
-    return render(json: { error: "url required" }, status: 400) if url.blank?
+
+    # 1) Validate URL
+    unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
+      flash[:alert] = "Please enter a valid URL"
+      return redirect_back(fallback_location: new_application_path)
+    end
 
     company = params[:company].to_s.strip
     title   = params[:title].to_s.strip
     status  = params[:status].presence || "Applied"
 
+    # 2) Enrich from the job page if company/title are blank
+    if company.blank? || title.blank?
+      parsed = parse_job_page(url) # uses HTTParty/Nokogiri (stubbable by your step)
+      company = parsed[:company] if company.blank? && parsed[:company].present?
+      title   = parsed[:title]   if title.blank?   && parsed[:title].present?
+    end
+
+    # 3) Fallback guesses
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
-    app = Application.new(url: url, company: company, title: title, status: status)
+    app = JobApplication.new(url: url, company: company, title: title, status: status)
 
     if app.save
       app.push_status!(status) if app.respond_to?(:push_status!) && status.present?
-      render json: app.as_json(only: [:id, :url, :company, :title, :status]), status: :created
+
+      flash[:notice] = "Application added"
+      respond_to do |fmt|
+        fmt.html { redirect_to jobs_path }
+        fmt.json { render json: app.slice(:id, :url, :company, :title, :status), status: :created }
+      end
     else
-      render json: { error: app.errors.full_messages.join(", ") }, status: 422
+      Rails.logger.debug("JobApplication save errors: \\#{app.errors.full_messages}")
+      msg = app.errors.full_messages.to_sentence
+      flash[:alert] = msg
+      respond_to do |fmt|
+        fmt.html { redirect_back fallback_location: new_application_path, alert: msg }
+        fmt.json { render json: { error: msg }, status: :unprocessable_entity }
+      end
     end
   end
 
   def update
-    app = Application.find_by(id: params[:id])
+    app = JobApplication.find_by(id: params[:id])
     return render(json: { error: "not found" }, status: 404) unless app
 
     if params[:status].present? && app.respond_to?(:push_status!)
       app.push_status!(params[:status])
-      return render json: app.as_json(only: [:id, :url, :company, :title, :status])
+      return render json: app.as_json(only: [ :id, :url, :company, :title, :status ])
     end
 
     if app.update(params.permit(:company, :title, :url, :status))
-      render json: app.as_json(only: [:id, :url, :company, :title, :status])
+      render json: app.as_json(only: [ :id, :url, :company, :title, :status ])
     else
       render json: { error: app.errors.full_messages.join(", ") }, status: 422
     end
   end
 
   def destroy
-    app = Application.find_by(id: params[:id])
-    app&.destroy!
+    app = JobApplication.find_by(id: params[:id])
+    return head :no_content unless app
+    app.destroy!
     head :no_content
   end
 
-  # def stats
-  #   apps = Application.all
+  def new
+    # render form
+  end
 
-  #   if apps.exists?
-  #     round_labels = Set.new
-  #     apps.find_each do |a|
-  #       Array(a.history).each do |h|
-  #         lab = stage_label(h["status"])
-  #         round_labels << lab if lab.start_with?("Round")
-  #       end
-  #     end
-  #     rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
 
-  #     nodes = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-  #     paths = []
-  #     apps.find_each { |a| paths << canonical_path(a.history, a.status) }
-  #     links = build_links_from_paths(paths, nodes)
-
-  #     render json: { nodes: nodes, links: links }
-  #   else
-  #     fakes  = load_fake_jobs
-  #     rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
-  #     nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-  #     paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
-  #     links  = build_links_from_paths(paths, nodes)
-  #     render json: { nodes: nodes, links: links }
-  #   end
-  # end
   def stats
-    apps = Application.all
+    apps = JobApplication.all
 
-    if apps.exists?
-      render json: Sankey::Builder.call(apps)
-    else
-      fakes  = load_fake_jobs
-      rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
-      nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-      paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
-      links  = build_links_from_paths(paths, nodes)
-      render json: { nodes: nodes, links: links }
+    # Ensure apps have valid histories and statuses
+    if apps.empty?
+      Rails.logger.warn("No job applications found for Sankey JSON generation.")
+      return render json: { nodes: [], links: [] }
     end
+
+    Rails.logger.debug("Sankey::Builder.call input: \\#{apps.map(&:attributes).inspect}")
+    sankey_data = Sankey::Builder.call(apps)
+    Rails.logger.debug("Sankey::Builder.call output: \\#{sankey_data.inspect}")
+
+    render json: sankey_data
+  rescue => e
+    render json: { error: e.message }, status: 500
   end
 
 
 
   private
+
+  # Parses the job page to extract company and title details
+  def parse_job_page(url)
+    require "httparty"
+    require "nokogiri"
+
+    response = HTTParty.get(url)
+    page = Nokogiri::HTML(response.body)
+
+    # Example parsing logic (adjust selectors based on actual job page structure)
+    company = page.at_css("meta[property='og:site_name']")&.[]("content") ||
+              page.at_css(".company-name")&.text&.strip
+
+    title = page.at_css("meta[property='og:title']")&.[]("content") ||
+            page.at_css(".job-title")&.text&.strip
+
+    { company: company, title: title }
+  rescue StandardError => e
+    Rails.logger.error("Failed to parse job page: \\#{e.message}")
+    {}
+  end
 
   def load_fake_jobs
     path = Rails.root.join("db", "fake_jobs.json")
@@ -154,16 +174,16 @@ class ApplicationsController < ApplicationController
   end
 
   def build_links_from_paths(paths, nodes)
-    idx = nodes.each_with_index.to_h
-    counts = Hash.new(0)
-    klass  = {}
+    idx     = nodes.each_with_index.to_h
+    counts  = Hash.new(0)
+    classes = {}
 
     add = ->(u, v, cls) do
       su, sv = idx[u], idx[v]
       return unless su && sv
-      key = [su, sv]
-      counts[key] += 1
-      klass[key] = cls
+      key = [ su, sv ]
+      counts[key]  += 1
+      classes[key]  = cls
     end
 
     paths.each do |path|
@@ -183,10 +203,12 @@ class ApplicationsController < ApplicationController
       end
     end
 
-    source, target, value, cls = [], [], [], []
-    counts.each { |(i, j), w| source << i; target << j; value << w; cls << klass[[i, j]] }
-    { source: source, target: target, value: value, cls: cls }
+    # Return Array<{source:, target:, value:, cls:}>
+    counts.map do |(source_idx, target_idx), w|
+      { source: source_idx, target: target_idx, value: w, cls: classes[[ source_idx, target_idx ]] }
+    end
   end
+
 
   def infer_company_from_url(url)
     host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
@@ -219,41 +241,12 @@ class ApplicationsController < ApplicationController
   end
 
   def canonical_path(history, current_status)
-    steps  = Array(history).sort_by { |h| h["ts"].to_s }
-    labels = steps.map { |h| stage_label(h["status"]) }
-    labels << stage_label(current_status) if labels.last.to_s != stage_label(current_status)
+    labels = Array(history).sort_by { |h| h["ts"].to_s }.map { |h| Sankey::Builder.stage_label(h["status"]) }
+    now = Sankey::Builder.stage_label(current_status)
+    labels << now if labels.last != now
     labels = labels.chunk_while { |a, b| a == b }.map(&:first)
     labels.unshift("Applications") unless labels.first == "Applications"
-
-    order = Hash.new(0)
-    order["Applications"] = 0
-    labels.select { |x| x.start_with?("Round") }.uniq
-          .sort_by { |x| x[/\d+/].to_i }
-          .each_with_index { |r, i| order[r] = 1 + i }
-    order["Offer"]    = 100
-    order["Accepted"] = 101
-    order["Declined"] = 101
-    order["Ghosted"]  = 102
-
-    mono, last = [], -1
-    labels.each do |st|
-      pos = order[st] || 0
-      next if mono.last == st
-      if pos >= last
-        mono << st
-        last = pos
-      end
-    end
-
-    last_ts =
-      begin
-        Time.parse(steps.last&.dig("ts").to_s)
-      rescue
-        nil
-      end
-    if last_ts && (Time.now.utc - last_ts) / 86_400.0 >= GHOST_DAYS
-      mono << "Ghosted" unless %w[Accepted Declined Ghosted].include?(mono.last)
-    end
-    mono
+    labels.insert(1, "Applied") unless labels.include?("Applied")
+    labels
   end
 end

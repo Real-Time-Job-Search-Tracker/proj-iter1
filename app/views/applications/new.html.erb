@@ -1,0 +1,8 @@
+<h1>Add Application</h1>
+
+<%= form_with url: applications_path, method: :post, local: true do %>
+  <%= label_tag :url, "Final apply URL" %>
+  <%= text_field_tag :url, "", id: "application_url" %>
+
+  <%= submit_tag "Add Application" %>
+<% end %>
