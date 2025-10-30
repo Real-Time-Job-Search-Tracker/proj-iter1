@@ -13,7 +13,7 @@ gem "stimulus-rails"
 # JSON helpers (optional but handy)
 gem "jbuilder"
 
-# HTTP / HTML parsing (your JobsController uses these)
+# HTTP
 gem "httparty"
 gem "nokogiri"
 
@@ -22,7 +22,7 @@ gem "solid_queue"
 gem "solid_cable"
 gem "thruster", require: false
 
-# Active Storage variants (OK to keep even if unused yet)
+# Active Storage variants
 gem "image_processing", "~> 1.2"
 
 # Database adapters
@@ -37,39 +37,32 @@ end
 # Boot speed
 gem "bootsnap", require: false
 
-# Windows time zone data (safe to keep)
+# Windows time zone data
 gem "tzinfo-data", platforms: %i[windows jruby]
 
-# Authentication (used by User model)
+# Auth
 gem "bcrypt", "~> 3.1"
 
-# RSpec for unit/model/request tests
+# Dev+Test tooling (shared)
 group :development, :test do
   gem "rspec-rails", "~> 6.0"
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"
 
-  # Security scanners used in your CI
+  # Security scanners
   gem "bundler-audit", require: false
   gem "brakeman", require: false
 
-  # Linting (used by your CI RuboCop job)
+  # Linting
   gem "rubocop-rails-omakase", require: false
-
-  gem "cucumber-rails", require: false
-  gem "database_cleaner-active_record"
-  gem "capybara"
-  gem "selenium-webdriver"
-  gem "webmock"
-  gem "simplecov", require: false
 end
 
-# Cucumber + system test stack
+# Test-only stack
 group :test do
   gem "cucumber", "~> 10.0"
   gem "cucumber-rails", require: false
   gem "capybara"
   gem "selenium-webdriver"
-  gem "webmock", "~> 3.0"
+  gem "webmock", "~> 3.19", require: false
   gem "database_cleaner-active_record"
   gem "simplecov", require: false
 end
