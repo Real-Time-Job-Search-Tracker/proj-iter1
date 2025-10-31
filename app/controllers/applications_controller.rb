@@ -143,9 +143,9 @@ class ApplicationsController < ApplicationController
     ]
 
     links = {
-      source: [ 0, 0, 1, 2, 3, 3 ],
-      target: [ 1, 6, 2, 3, 4, 5 ],
-      value: [ 250, 150, 120, 40, 25, 15 ],
+      source: [0, 0, 1, 2, 3, 3],
+      target: [1, 6, 2, 3, 4, 5],
+      value: [250, 150, 120, 40, 25, 15],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",
