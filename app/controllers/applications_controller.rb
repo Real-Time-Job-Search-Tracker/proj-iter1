@@ -143,9 +143,9 @@ class ApplicationsController < ApplicationController
     ]
 
     links = {
-      source: [0, 0, 1, 2, 3, 3],
-      target: [1, 6, 2, 3, 4, 5],
-      value: [250, 150, 120, 40, 25, 15],
+      source: [ 0, 0, 1, 2, 3, 3 ],
+      target: [ 1, 6, 2, 3, 4, 5 ],
+      value: [ 250, 150, 120, 40, 25, 15 ],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",
@@ -173,7 +173,7 @@ class ApplicationsController < ApplicationController
     return { nodes: [], links: [] } unless fakes.is_a?(Array) && fakes.any?
 
     rounds = collect_rounds_from_histories(fakes.map { |h| h["history"] || h[:history] })
-    nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+    nodes  = [ "Applications" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
     paths  = fakes.map do |h|
       canonical_path(
         h["history"] || h[:history],
