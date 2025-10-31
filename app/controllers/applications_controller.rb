@@ -10,8 +10,16 @@ class ApplicationsController < ApplicationController
 
   def index
     apps = JobApplication.order(created_at: :desc)
+
+    rows =
+    if apps.exists?
+      apps.as_json(only: %i[id url company title status])
+    else
+      load_fake_jobs.map { |h| h.slice(:id, :url, :company, :title, :status) }
+    end
+
     respond_to do |fmt|
-      fmt.json { render json: apps.as_json(only: %i[id url company title status]) }
+      fmt.json { render json: rows }
       fmt.html { redirect_to root_path }
     end
   end
@@ -89,23 +97,86 @@ class ApplicationsController < ApplicationController
   end
 
 
-  def stats
-    apps = JobApplication.all
+  # def stats
+  #   apps = JobApplication.all
 
-    # Ensure apps have valid histories and statuses
-    if apps.empty?
-      Rails.logger.warn("No job applications found for Sankey JSON generation.")
-      return render json: { nodes: [], links: [] }
+  #   if apps.exists?
+
+  #     data = Sankey::Builder.call(apps)
+  #   else
+
+  #     fakes  = load_fake_jobs
+  #     rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
+  #     nodes  = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+
+  #     paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
+  #     links  = build_links_from_paths(paths, nodes)
+  #     data   = { nodes: nodes, links: links }
+  #   end
+
+
+  #   if data[:links].is_a?(Array)
+  #     src = []; tgt = []; val = []; cls = []
+  #     data[:links].each do |link|
+  #       src << link[:source]
+  #       tgt << link[:target]
+  #       val << link[:value]
+  #       cls << link[:cls]
+  #     end
+  #     data[:links] = { source: src, target: tgt, value: val, cls: cls }
+  #   end
+
+  #   render json: data
+  # rescue => e
+  #   Rails.logger.error("[applications#stats] #{e.class}: #{e.message}")
+  #   render json: { nodes: [], links: [] }, status: 500
+  # end
+  def stats
+    nodes = [
+      "Applications",
+      "Round1",
+      "Round2",
+      "Offer",
+      "Accepted",
+      "Declined",
+      "Ghosted"
+    ]
+
+    links = {
+      source: [0, 0, 1, 2, 3, 3],
+      target: [1, 6, 2, 3, 4, 5],
+      value:  [250, 150, 120, 40, 25, 15],
+      cls:    ["apps_to_round", "apps_to_ghosted", "round_to_round", "round_to_offer", "offer_to_accepted", "offer_to_declined"]
+    }
+
+    render json: { nodes: nodes, links: links }
+  end
+
+  def build_from_fake
+    json_path = Rails.root.join("db", "fake_jobs.json")
+
+    unless File.exist?(json_path)
+      Rails.logger.warn("[applications#stats] db/fake_jobs.json not found at #{json_path}")
+      return { nodes: [], links: [] }
     end
 
-    Rails.logger.debug("Sankey::Builder.call input: \\#{apps.map(&:attributes).inspect}")
-    sankey_data = Sankey::Builder.call(apps)
-    Rails.logger.debug("Sankey::Builder.call output: \\#{sankey_data.inspect}")
+    fakes = JSON.parse(File.read(json_path)) rescue []
 
-    render json: sankey_data
-  rescue => e
-    render json: { error: e.message }, status: 500
+    return { nodes: [], links: [] } unless fakes.is_a?(Array) && fakes.any?
+
+    rounds = collect_rounds_from_histories(fakes.map { |h| h["history"] || h[:history] })
+    nodes  = ["Applications"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+    paths  = fakes.map do |h|
+      canonical_path(
+        h["history"] || h[:history],
+        h["status"]  || h[:status]
+      )
+    end
+    links  = build_links_from_paths(paths, nodes)
+
+    { nodes: nodes, links: links }
   end
+
 
 
 
@@ -135,8 +206,16 @@ class ApplicationsController < ApplicationController
   def load_fake_jobs
     path = Rails.root.join("db", "fake_jobs.json")
     return [] unless File.exist?(path)
-    arr = JSON.parse(File.read(path)) rescue []
-    arr = [] unless arr.is_a?(Array)
+    raw = JSON.parse(File.read(path)) rescue []
+    arr =
+      if raw.is_a?(Hash) && raw["history"].is_a?(Array)
+        raw["history"]
+      elsif raw.is_a?(Array)
+        raw
+      else
+        []
+      end
+
 
     arr.each_with_index.map do |x, i|
       h = x.is_a?(Hash) ? x : {}

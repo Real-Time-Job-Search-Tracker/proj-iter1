@@ -164,6 +164,16 @@ async function loadSankey() {
     });
     if (!res.ok) throw new Error("stats failed");
     const data = await res.json();
+    
+    if (Array.isArray(data.links)) {
+      const src = [], tgt = [], val = [];
+      data.links.forEach((l) => {
+        src.push(l.source);
+        tgt.push(l.target);
+        val.push(l.value);
+      });
+      data.links = { source: src, target: tgt, value: val };
+    }
 
     const nodes = data.nodes || [];
     const links = data.links || {};

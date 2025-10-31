@@ -73,3 +73,7 @@
   </div>
 
 </div>
+
+<script>
+  window.FAKE_JOBS = JSON.parse(<%= (@jobs || []).to_json.to_json %>);
+</script>
