@@ -145,12 +145,20 @@ class ApplicationsController < ApplicationController
     links = {
       source: [0, 0, 1, 2, 3, 3],
       target: [1, 6, 2, 3, 4, 5],
-      value:  [250, 150, 120, 40, 25, 15],
-      cls:    ["apps_to_round", "apps_to_ghosted", "round_to_round", "round_to_offer", "offer_to_accepted", "offer_to_declined"]
+      value: [250, 150, 120, 40, 25, 15],
+      cls: [
+        "apps_to_round",
+        "apps_to_ghosted",
+        "round_to_round",
+        "round_to_offer",
+        "offer_to_accepted",
+        "offer_to_declined"
+      ]
     }
 
     render json: { nodes: nodes, links: links }
   end
+
 
   def build_from_fake
     json_path = Rails.root.join("db", "fake_jobs.json")
