@@ -45,7 +45,7 @@ gem "bcrypt", "~> 3.1"
 
 # Dev+Test tooling (shared)
 group :development, :test do
-  gem "rspec-rails", "~> 6.0"
+  gem "rspec-rails", "~> 8.0"
   gem "debug", platforms: %i[mri windows], require: "debug/prelude"
 
   # Security scanners
