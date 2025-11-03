@@ -62,7 +62,7 @@ group :test do
   gem "cucumber-rails", require: false
   gem "capybara"
   gem "selenium-webdriver"
-  gem "webmock", "~> 3.19", require: false
+  gem "webmock", "~> 3.26", require: false
   gem "database_cleaner-active_record"
   gem "simplecov", require: false
 end
