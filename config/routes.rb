@@ -20,8 +20,9 @@ Rails.application.routes.draw do
   post   "/sign_in",  to: "sessions#create"
   delete "/sign_out", to: "sessions#destroy", as: :sign_out
 
+  get "/stats", to: "dashboard#stats"
 
-  root "applications#index"
+  root "jobs#index" 
 
   get  "/dashboard", to: "dashboard#show", as: :dashboard
 
