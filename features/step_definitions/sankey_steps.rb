@@ -12,7 +12,7 @@ end
 
 # features/step_definitions/sankey_steps.rb
 When("I request the sankey JSON") do
-  page.driver.browser.execute_cdp("Network.setExtraHTTPHeaders", headers: { "ACCEPT" => "application/json" })
+  # page.driver.browser.execute_cdp("Network.setExtraHTTPHeaders", headers: { "ACCEPT" => "application/json" })
   visit "/applications/stats.json"
 end
 

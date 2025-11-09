@@ -134,6 +134,7 @@ class ApplicationsController < ApplicationController
   def stats
     nodes = [
       "Applications",
+      "Applied",
       "Round1",
       "Round2",
       "Offer",
@@ -142,7 +143,7 @@ class ApplicationsController < ApplicationController
       "Ghosted"
     ]
 
-    links = {
+    raw_links = {
       source: [0, 0, 1, 2, 3, 3],
       target: [1, 6, 2, 3, 4, 5],
       value: [250, 150, 120, 40, 25, 15],
@@ -155,6 +156,14 @@ class ApplicationsController < ApplicationController
         "offer_to_declined"
       ]
     }
+    links = raw_links[:source].each_with_index.map do |src, i|
+    {
+      source: src,
+      target: raw_links[:target][i],
+      value: raw_links[:value][i],
+      cls: raw_links[:cls][i]
+    }
+  end
 
     render json: { nodes: nodes, links: links }
   end
