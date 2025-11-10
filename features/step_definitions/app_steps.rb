@@ -28,6 +28,7 @@ When("I paste {string} into the Add Application form") do |the_url|
 end
 
 When("I submit the form") do
+  # Click the submit button without holding onto a form element
   if page.has_button?("Add Application", wait: 0.5)
     click_button "Add Application"
   elsif page.has_button?("Add", wait: 0.5)
@@ -35,10 +36,16 @@ When("I submit the form") do
   else
     find("input[type=submit], button[type=submit]", match: :first).click
   end
+
+  page.has_css?(".flash", wait: 5) || page.has_current_path?(/applications|new|jobs/i, wait: 5)
 end
 
-Then('I should see {string}') do |content|
-  expect(page).to have_content(content)
+Then("I should see {string}") do |content|
+  if page.has_css?(".flash", wait: 0.5) && page.has_css?(".flash", text: content, wait: 0.5)
+    expect(page).to have_css(".flash", text: content, wait: 5)
+  else
+    expect(page).to have_text(content, wait: 5)
+  end
 end
 
 Then("I should see {string} within the applications list") do |company|
@@ -48,18 +55,15 @@ Then("I should see {string} within the applications list") do |company|
   if (container = containers.find { |sel| page.has_css?(sel) })
     within(container) { expect(page).to have_text(company) }
   else
-    # fall back to whole page if the page itself *is* the list
     expect(page).to have_text(company)
   end
 end
 
 Then('I should see the stage {string} for {string}') do |stage, company|
-  #
   app = JobApplication.find_by!(company: company)
   expect(app.status).to eq(stage)
 end
 
-Then('I should not see {string}') do |content|
-  #
-  expect(page).not_to have_content(content)
+Then("I should not see {string}") do |content|
+  expect(page).to have_no_text(content, wait: 5)
 end

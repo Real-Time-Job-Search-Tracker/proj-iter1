@@ -14,7 +14,7 @@ RSpec.describe "Sankey builder" do
         company: "A Co",
         title: "Eng A",
         status: "Applied",
-        history: [h("Applied")]
+        history: [ h("Applied") ]
       )
 
       # App B: Applied -> Round1 -> Offer -> Accepted
@@ -31,7 +31,7 @@ RSpec.describe "Sankey builder" do
       )
 
       # Pass a relation so find_each works
-      apps = JobApplication.where(id: [a.id, b.id])
+      apps = JobApplication.where(id: [ a.id, b.id ])
       result = Sankey::Builder.call(apps)
 
       # nodes
@@ -45,7 +45,7 @@ RSpec.describe "Sankey builder" do
       links = result[:links]
       expect(links).to be_a(Hash)
       %i[source target value cls].each { |k| expect(links).to have_key(k) }
-      [:source, :target, :value, :cls].each { |k| expect(links[k]).to be_an(Array) }
+      [ :source, :target, :value, :cls ].each { |k| expect(links[k]).to be_an(Array) }
       expect(links[:source].size).to eq(links[:target].size)
       expect(links[:value].size).to  eq(links[:target].size)
       expect(links[:cls].size).to    eq(links[:target].size)

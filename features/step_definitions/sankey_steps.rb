@@ -10,7 +10,6 @@ Given("an application exists for {string} in stage {string}") do |company, stage
   )
 end
 
-# features/step_definitions/sankey_steps.rb
 When("I request the sankey JSON") do
   # page.driver.browser.execute_cdp("Network.setExtraHTTPHeaders", headers: { "ACCEPT" => "application/json" })
   visit "/applications/stats.json"

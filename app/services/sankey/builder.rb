@@ -13,7 +13,7 @@ module Sankey
       rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
 
 
-      nodes = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+      nodes = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
       idx   = nodes.each_with_index.to_h
 
       counts = Hash.new(0)
@@ -22,7 +22,7 @@ module Sankey
       add = lambda do |u, v, cls|
         su, sv = idx[u], idx[v]
         return unless su && sv
-        key = [su, sv]
+        key = [ su, sv ]
         counts[key] += 1
         klass[key] = cls
       end
@@ -54,7 +54,7 @@ module Sankey
 
       source, target, value, cls = [], [], [], []
       counts.each do |(i, j), w|
-        source << i; target << j; value << w; cls << klass[[i, j]]
+        source << i; target << j; value << w; cls << klass[[ i, j ]]
       end
 
       { nodes: nodes, links: { source: source, target: target, value: value, cls: cls } }
@@ -64,9 +64,9 @@ module Sankey
       status.to_s.capitalize
     end
 
-    
+
     def self.canonical_path(history, current_status)
-      path = ["Applications"]
+      path = [ "Applications" ]
       hist = Array(history).map { |h| stage_label(h["status"]) }.compact
 
       path << "Applied" unless hist.include?("Applied")
@@ -77,7 +77,7 @@ module Sankey
       end
 
       cur = stage_label(current_status)
-      if ["Offer", "Accepted", "Declined", "Ghosted"].include?(cur)
+      if [ "Offer", "Accepted", "Declined", "Ghosted" ].include?(cur)
         path << cur unless path.last == cur
       end
 

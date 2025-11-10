@@ -1,7 +1,6 @@
 require "rails_helper"
 
 RSpec.describe "Sign in", type: :feature do
-
   def sign_in_as(email:, password:)
     visit sign_in_path
     within %(form[data-test="login"]) do
@@ -17,7 +16,7 @@ RSpec.describe "Sign in", type: :feature do
     sign_in_as(email: user.email, password: "password")
 
     # Accept either dashboard or jobs
-    expect([dashboard_path, jobs_path]).to include(page.current_path)
+    expect([ dashboard_path, jobs_path ]).to include(page.current_path)
 
     # Assert we’re on a signed-in page
     expect(page).to have_content("Dashboard").or have_content("Add an application")

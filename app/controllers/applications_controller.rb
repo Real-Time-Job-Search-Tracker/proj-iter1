@@ -29,8 +29,7 @@ class ApplicationsController < ApplicationController
 
     # 1) Validate URL
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
-      flash[:alert] = "Please enter a valid URL"
-      return redirect_back(fallback_location: new_application_path)
+      return redirect_to(new_application_path, alert: "Please enter a valid URL")
     end
 
     company = params[:company].to_s.strip
@@ -110,9 +109,9 @@ class ApplicationsController < ApplicationController
     ]
 
     raw_links = {
-      source: [0, 0, 1, 2, 3, 3],
-      target: [1, 6, 2, 3, 4, 5],
-      value: [250, 150, 120, 40, 25, 15],
+      source: [ 0, 0, 1, 2, 3, 3 ],
+      target: [ 1, 6, 2, 3, 4, 5 ],
+      value: [ 250, 150, 120, 40, 25, 15 ],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",

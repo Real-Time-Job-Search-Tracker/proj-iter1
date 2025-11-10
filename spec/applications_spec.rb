@@ -89,7 +89,7 @@ RSpec.describe "Applications", type: :request do
 
         invalid_app = instance_double(JobApplication,
         save: false,
-        errors: double(full_messages: ["URL can't be blank"]),
+        errors: double(full_messages: [ "URL can't be blank" ]),
         as_json: {},
         slice: {},
         respond_to?: false
@@ -166,7 +166,7 @@ RSpec.describe "Applications", type: :request do
       expect(json["links"]).to be_a(Array)
       expect(json["links"]).to all(include("source", "target", "value", "cls"))
 
-      pair_keys = json["links"].map { |h| [h["source"], h["target"]] }
+      pair_keys = json["links"].map { |h| [ h["source"], h["target"] ] }
       expect(pair_keys.uniq.size).to eq(json["links"].size)
     end
   end
@@ -241,13 +241,13 @@ RSpec.describe "Applications", type: :request do
             "company" => "A Co",
             "title" => "Engineer",
             "status" => "Round1",
-            "history" => [{ "status" => "Applied", "ts" => Time.now.utc.iso8601 }]
+            "history" => [ { "status" => "Applied", "ts" => Time.now.utc.iso8601 } ]
         },
         {
             # company missing -> inferred from Greenhouse URL
             "url" => "https://boards.greenhouse.io/acme/jobs/12345",
             "title" => "Data Scientist",
-            "history" => ["Applied", { "status" => "Round1", "ts" => Time.now.utc.iso8601 }]
+            "history" => [ "Applied", { "status" => "Round1", "ts" => Time.now.utc.iso8601 } ]
         },
         {
             # title missing -> becomes "(unknown title)"

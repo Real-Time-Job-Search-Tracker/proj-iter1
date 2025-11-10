@@ -44,7 +44,7 @@ RSpec.describe "Dashboard", type: :request do
           company: "A Co",
           title: "Eng A",
           status: "Applied",
-          history: [{ "status" => "Applied", "ts" => Time.now.utc.iso8601 }]
+          history: [ { "status" => "Applied", "ts" => Time.now.utc.iso8601 } ]
         )
         b = JobApplication.create!(
           url: "https://example.com/b",
@@ -60,7 +60,7 @@ RSpec.describe "Dashboard", type: :request do
 
         payload = {
           nodes: %w[Applications Applied Round1 Offer],
-          links: { source: [0, 1, 2], target: [1, 2, 3], value: [2, 1, 1], cls: %w[apps_to_applied applied_to_round round_to_offer] }
+          links: { source: [ 0, 1, 2 ], target: [ 1, 2, 3 ], value: [ 2, 1, 1 ], cls: %w[apps_to_applied applied_to_round round_to_offer] }
         }
 
         expect(Sankey::Builder).to receive(:call) do |relation|

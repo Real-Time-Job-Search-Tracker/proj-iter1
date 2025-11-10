@@ -5,7 +5,7 @@ Rails.application.routes.draw do
 
   get "/stats", to: "dashboard#stats"
 
-  root "jobs#index" 
+  root "jobs#index"
 
   get  "/dashboard", to: "dashboard#show", as: :dashboard
 

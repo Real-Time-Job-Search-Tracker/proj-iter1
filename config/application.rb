@@ -1,4 +1,3 @@
-# config/application.rb
 require_relative "boot"
 
 require "rails"
@@ -12,7 +11,6 @@ require "action_mailbox/engine"
 require "action_text/engine"
 require "action_view/railtie"
 require "action_cable/engine"
-# require "rails/test_unit/railtie"
 
 Bundler.require(*Rails.groups)
 
