@@ -29,8 +29,7 @@ class ApplicationsController < ApplicationController
 
     # 1) Validate URL
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
-      flash[:alert] = "Please enter a valid URL"
-      return redirect_back(fallback_location: new_application_path)
+      return redirect_to(new_application_path, alert: "Please enter a valid URL")
     end
 
     company = params[:company].to_s.strip
@@ -110,9 +109,9 @@ class ApplicationsController < ApplicationController
     ]
 
     raw_links = {
-      source: [0, 0, 1, 2, 3, 3],
-      target: [1, 6, 2, 3, 4, 5],
-      value: [250, 150, 120, 40, 25, 15],
+      source: [ 0, 0, 1, 2, 3, 3 ],
+      target: [ 1, 6, 2, 3, 4, 5 ],
+      value: [ 250, 150, 120, 40, 25, 15 ],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",
@@ -133,52 +132,6 @@ class ApplicationsController < ApplicationController
 
     render json: { nodes: nodes, links: links }
   end
-
-
-
-  def build_links_from_paths(paths, nodes)
-    idx     = nodes.each_with_index.to_h
-    counts  = Hash.new(0)
-    classes = {}
-
-    add = ->(u, v, cls) do
-      su, sv = idx[u], idx[v]
-      return unless su && sv
-      key = [su, sv]
-      counts[key]  += 1
-      classes[key] = cls
-    end
-
-    paths.each do |path|
-      path.each_cons(2) do |u, v|
-        cls =
-          if u == "Applications" && v == "Applied"               then "apps_to_applied"
-          elsif u == "Applications" && v.start_with?("Round")    then "apps_to_round"
-          elsif u == "Applications" && v == "Ghosted"            then "apps_to_ghosted"
-          elsif u == "Applied" && v.start_with?("Round")         then "applied_to_round"
-          elsif u == "Applied" && v == "Offer"                   then "applied_to_offer"
-          elsif u == "Applied" && v == "Ghosted"                 then "applied_to_ghosted"
-          elsif u.start_with?("Round") && v.start_with?("Round") then "round_to_round"
-          elsif u.start_with?("Round") && v == "Offer"           then "round_to_offer"
-          elsif u.start_with?("Round") && v == "Ghosted"         then "round_to_ghosted"
-          elsif u == "Offer" && v == "Accepted"                  then "offer_to_accepted"
-          elsif u == "Offer" && v == "Declined"                  then "offer_to_declined"
-          elsif u == "Offer" && v == "Ghosted"                   then "offer_to_ghosted"
-          else "other"
-          end
-        add.call(u, v, cls)
-      end
-    end
-
-    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[s, t]] } }
-  end
-
-
-
-
-
-
-
 
   private
 
