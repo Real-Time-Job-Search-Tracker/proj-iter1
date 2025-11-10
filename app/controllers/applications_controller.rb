@@ -109,9 +109,9 @@ class ApplicationsController < ApplicationController
     ]
 
     links = {
-      source: [0, 0, 1, 2, 3, 3],
-      target: [1, 6, 2, 3, 4, 5],
-      value: [250, 150, 120, 40, 25, 15],
+      source: [ 0, 0, 1, 2, 3, 3 ],
+      target: [ 1, 6, 2, 3, 4, 5 ],
+      value: [ 250, 150, 120, 40, 25, 15 ],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",
@@ -135,7 +135,7 @@ class ApplicationsController < ApplicationController
     add = ->(u, v, cls) do
       su, sv = idx[u], idx[v]
       return unless su && sv
-      key = [su, sv]
+      key = [ su, sv ]
       counts[key]  += 1
       classes[key] = cls
     end
@@ -161,7 +161,7 @@ class ApplicationsController < ApplicationController
       end
     end
 
-    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[s, t]] } }
+    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[ s, t ]] } }
   end
 
 
