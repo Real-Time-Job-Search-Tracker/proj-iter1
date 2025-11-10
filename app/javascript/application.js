@@ -9,8 +9,10 @@ const byId = (id) => document.getElementById(id);
 const meta = (name) =>
   document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") || "";
 
+
+
 // ---------- create: submit with status ----------
-function hookForm() {
+async function hookForm() {
   const form = document.querySelector("#pasteForm");
   if (!form) return;
 
@@ -34,7 +36,7 @@ function hookForm() {
     try {
       if (submitBtn) submitBtn.disabled = true;
 
-      await fetch("/applications", {
+      const res = await fetch("/applications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,20 +46,80 @@ function hookForm() {
         body: JSON.stringify(payload),
       });
 
+      // ⬇️ 这里是关键：失败就直接打印
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("POST /applications failed:", res.status, txt);
+        alert(`POST /applications failed: ${res.status}`);
+        return;
+      }
+
+      // 成功才刷新
+      await loadApps();
+      await loadSankey();
+
       if (urlI) urlI.value = "";
       if (coI) coI.value = "";
       if (tiI) tiI.value = "";
       if (stI) stI.value = "Applied";
-
-      await loadApps();
-      await loadSankey();
     } catch (err) {
       console.error("[hookForm] submit failed:", err);
+      alert("Submit failed, see console");
     } finally {
       if (submitBtn) submitBtn.disabled = false;
     }
   });
 }
+
+// // ---------- create: submit with status ----------
+// function hookForm() {
+//   const form = document.querySelector("#pasteForm");
+//   if (!form) return;
+
+//   const urlI = byId("jobUrl");
+//   const coI = byId("jobCompany");
+//   const tiI = byId("jobTitle");
+//   const stI = byId("jobStatus");
+
+//   form.addEventListener("submit", async (e) => {
+//     e.preventDefault();
+
+//     const submitBtn = form.querySelector('[type="submit"]');
+//     const url = (urlI?.value || "").trim();
+//     if (!url) return;
+
+//     const payload = { url };
+//     if (coI && coI.value.trim()) payload.company = coI.value.trim();
+//     if (tiI && tiI.value.trim()) payload.title = tiI.value.trim();
+//     if (stI && stI.value) payload.status = stI.value;
+
+//     try {
+//       if (submitBtn) submitBtn.disabled = true;
+
+//       await fetch("/applications", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Accept: "application/json",
+//           "X-CSRF-Token": meta("csrf-token"),
+//         },
+//         body: JSON.stringify(payload),
+//       });
+
+//       if (urlI) urlI.value = "";
+//       if (coI) coI.value = "";
+//       if (tiI) tiI.value = "";
+//       if (stI) stI.value = "Applied";
+
+//       await loadApps();
+//       await loadSankey();
+//     } catch (err) {
+//       console.error("[hookForm] submit failed:", err);
+//     } finally {
+//       if (submitBtn) submitBtn.disabled = false;
+//     }
+//   });
+// }
 
 // ---------- index table ----------
 async function loadApps() {

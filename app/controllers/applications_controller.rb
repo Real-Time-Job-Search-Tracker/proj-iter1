@@ -97,40 +97,6 @@ class ApplicationsController < ApplicationController
   end
 
 
-  # def stats
-  #   apps = JobApplication.all
-
-  #   if apps.exists?
-
-  #     data = Sankey::Builder.call(apps)
-  #   else
-
-  #     fakes  = load_fake_jobs
-  #     rounds = collect_rounds_from_histories(fakes.map { |h| h[:history] })
-  #     nodes  = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
-
-  #     paths  = fakes.map { |h| canonical_path(h[:history], h[:status]) }
-  #     links  = build_links_from_paths(paths, nodes)
-  #     data   = { nodes: nodes, links: links }
-  #   end
-
-
-  #   if data[:links].is_a?(Array)
-  #     src = []; tgt = []; val = []; cls = []
-  #     data[:links].each do |link|
-  #       src << link[:source]
-  #       tgt << link[:target]
-  #       val << link[:value]
-  #       cls << link[:cls]
-  #     end
-  #     data[:links] = { source: src, target: tgt, value: val, cls: cls }
-  #   end
-
-  #   render json: data
-  # rescue => e
-  #   Rails.logger.error("[applications#stats] #{e.class}: #{e.message}")
-  #   render json: { nodes: [], links: [] }, status: 500
-  # end
   def stats
     nodes = [
       "Applications",
@@ -169,30 +135,47 @@ class ApplicationsController < ApplicationController
   end
 
 
-  def build_from_fake
-    json_path = Rails.root.join("db", "fake_jobs.json")
 
-    unless File.exist?(json_path)
-      Rails.logger.warn("[applications#stats] db/fake_jobs.json not found at #{json_path}")
-      return { nodes: [], links: [] }
+  def build_links_from_paths(paths, nodes)
+    idx     = nodes.each_with_index.to_h
+    counts  = Hash.new(0)
+    classes = {}
+
+    add = ->(u, v, cls) do
+      su, sv = idx[u], idx[v]
+      return unless su && sv
+      key = [su, sv]
+      counts[key]  += 1
+      classes[key] = cls
     end
 
-    fakes = JSON.parse(File.read(json_path)) rescue []
-
-    return { nodes: [], links: [] } unless fakes.is_a?(Array) && fakes.any?
-
-    rounds = collect_rounds_from_histories(fakes.map { |h| h["history"] || h[:history] })
-    nodes  = [ "Applications" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
-    paths  = fakes.map do |h|
-      canonical_path(
-        h["history"] || h[:history],
-        h["status"]  || h[:status]
-      )
+    paths.each do |path|
+      path.each_cons(2) do |u, v|
+        cls =
+          if u == "Applications" && v == "Applied"               then "apps_to_applied"
+          elsif u == "Applications" && v.start_with?("Round")    then "apps_to_round"
+          elsif u == "Applications" && v == "Ghosted"            then "apps_to_ghosted"
+          elsif u == "Applied" && v.start_with?("Round")         then "applied_to_round"
+          elsif u == "Applied" && v == "Offer"                   then "applied_to_offer"
+          elsif u == "Applied" && v == "Ghosted"                 then "applied_to_ghosted"
+          elsif u.start_with?("Round") && v.start_with?("Round") then "round_to_round"
+          elsif u.start_with?("Round") && v == "Offer"           then "round_to_offer"
+          elsif u.start_with?("Round") && v == "Ghosted"         then "round_to_ghosted"
+          elsif u == "Offer" && v == "Accepted"                  then "offer_to_accepted"
+          elsif u == "Offer" && v == "Declined"                  then "offer_to_declined"
+          elsif u == "Offer" && v == "Ghosted"                   then "offer_to_ghosted"
+          else "other"
+          end
+        add.call(u, v, cls)
+      end
     end
-    links  = build_links_from_paths(paths, nodes)
 
-    { nodes: nodes, links: links }
+    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[s, t]] } }
   end
+
+
+
+
 
 
 
