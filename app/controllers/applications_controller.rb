@@ -100,6 +100,7 @@ class ApplicationsController < ApplicationController
   def stats
     nodes = [
       "Applications",
+      "Applied",
       "Round1",
       "Round2",
       "Offer",
@@ -108,10 +109,10 @@ class ApplicationsController < ApplicationController
       "Ghosted"
     ]
 
-    links = {
-      source: [ 0, 0, 1, 2, 3, 3 ],
-      target: [ 1, 6, 2, 3, 4, 5 ],
-      value: [ 250, 150, 120, 40, 25, 15 ],
+    raw_links = {
+      source: [0, 0, 1, 2, 3, 3],
+      target: [1, 6, 2, 3, 4, 5],
+      value: [250, 150, 120, 40, 25, 15],
       cls: [
         "apps_to_round",
         "apps_to_ghosted",
@@ -121,6 +122,14 @@ class ApplicationsController < ApplicationController
         "offer_to_declined"
       ]
     }
+    links = raw_links[:source].each_with_index.map do |src, i|
+    {
+      source: src,
+      target: raw_links[:target][i],
+      value: raw_links[:value][i],
+      cls: raw_links[:cls][i]
+    }
+  end
 
     render json: { nodes: nodes, links: links }
   end
@@ -135,7 +144,7 @@ class ApplicationsController < ApplicationController
     add = ->(u, v, cls) do
       su, sv = idx[u], idx[v]
       return unless su && sv
-      key = [ su, sv ]
+      key = [su, sv]
       counts[key]  += 1
       classes[key] = cls
     end
@@ -161,7 +170,7 @@ class ApplicationsController < ApplicationController
       end
     end
 
-    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[ s, t ]] } }
+    counts.map { |(s, t), w| { source: s, target: t, value: w, cls: classes[[s, t]] } }
   end
 
 
