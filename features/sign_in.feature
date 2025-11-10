@@ -9,4 +9,4 @@ Feature: Sign in
   Scenario: Successful sign in
     When I visit the sign in page
     And I sign in as "alice@example.com" with password "password"
-    Then I should see "Dashboard"
+    Then I should see "Overview"
