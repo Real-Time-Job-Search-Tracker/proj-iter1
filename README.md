@@ -62,7 +62,7 @@ If PostgreSQL is not already installed and running, use the following commands:
     git clone https://github.com/Real-Time-Job-Search-Tracker/proj-iter1.git
     cd proj-iter1
     ```
-    Or if you have run our code before, run the following command before continue
+    Run the following command before continue
     ```bash
     rm -rf coverage
     ```
