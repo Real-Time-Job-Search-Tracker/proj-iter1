@@ -62,15 +62,19 @@ If PostgreSQL is not already installed and running, use the following commands:
     git clone https://github.com/Real-Time-Job-Search-Tracker/proj-iter1.git
     cd proj-iter1
     ```
+    Or if you have run our code before, run the following command before continue
+    ```bash
+    rm -rf coverage
+    ```
 
-2.  **Install dependencies:**
+3.  **Install dependencies:**
     This command installs all the required gems specified in the `Gemfile`.
 
     ```bash
     bundle install
     ```
 
-3.  **Create and setup the database:**
+4.  **Create and setup the database:**
     This creates the development and test databases and runs all migrations.
 
     ```bash
