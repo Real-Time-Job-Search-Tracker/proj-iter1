@@ -3,7 +3,8 @@ When('I visit the dashboard page') do
 end
 
 When('I request the dashboard stats JSON') do
-  visit stats_dashboard_path
+  page.driver.header 'Accept', 'application/json'
+  visit "/stats"
 end
 
 Then('the JSON should include a node {string}') do |label|

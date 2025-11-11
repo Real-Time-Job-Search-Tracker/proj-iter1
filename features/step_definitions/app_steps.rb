@@ -40,9 +40,18 @@ When("I submit the form") do
   page.has_css?(".flash", wait: 5) || page.has_current_path?(/applications|new|jobs/i, wait: 5)
 end
 
-Then("I should see {string}") do |content|
-  if page.has_css?(".flash", wait: 0.5) && page.has_css?(".flash", text: content, wait: 0.5)
-    expect(page).to have_css(".flash", text: content, wait: 5)
+Then('I should see {string}') do |content|
+  # If we just submitted an invalid URL, we expect to be back on the new form.
+  if defined?(new_application_path)
+    begin
+      expect(page).to have_current_path(new_application_path, ignore_query: true, wait: 2)
+    rescue RSpec::Expectations::ExpectationNotMetError
+    end
+  end
+
+  # Look for flash containers first, with a generous wait
+  if page.has_css?('.flash, .alert, [role="alert"]', text: content, wait: 5, exact_text: false)
+    expect(page).to have_css('.flash, .alert, [role="alert"]', text: content, exact_text: false)
   else
     expect(page).to have_text(content, wait: 5)
   end

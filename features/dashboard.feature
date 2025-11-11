@@ -1,4 +1,3 @@
-@javascript
 Feature: Dashboard overview
   As a signed-in user
   I want to see my dashboard and job stats
@@ -6,6 +5,7 @@ Feature: Dashboard overview
   Background:
     Given I am signed in as "alice@example.com" with password "password"
 
+  @javascript
   Scenario: Visiting the dashboard
     When I visit the dashboard page
     Then I should see "Overview"
