@@ -1,7 +1,11 @@
 class JobApplication < ApplicationRecord
   self.table_name = "job_applications"
 
-  validates :url, presence: true, uniqueness: true
+  validates :url, presence: true, uniqueness: true, format: { 
+    with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), 
+    message: "Please enter a valid URL" 
+  }
+  
   validates :company, :title, presence: true
 
   before_create do

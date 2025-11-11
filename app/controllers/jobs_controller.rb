@@ -2,6 +2,8 @@ require "httparty"
 require "nokogiri"
 
 class JobsController < ApplicationController
+  include ApplicationsController::JobParser 
+  
   protect_from_forgery with: :null_session
 
   def index
@@ -10,20 +12,17 @@ class JobsController < ApplicationController
   end
 
   def inspect
-    url = params[:url]
-    return render json: { error: "Missing URL" }, status: :bad_request if url.blank?
+    url = params[:url].to_s.strip
+    
+    unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
+      return render json: { error: "Please enter a valid URL" }, status: :unprocessable_entity
+    end
 
     begin
-      response = HTTParty.get(url, headers: { "User-Agent" => "Mozilla/5.0" }, timeout: 10)
-      html = response.body
-      doc = Nokogiri::HTML(html)
-
-      title = doc.at("title")&.text&.strip || "Unknown Title"
-      company = doc.at('meta[property="og:site_name"]')&.[]("content")&.strip || "Unknown Company"
-
-      render json: { url: url, title: title, company: company }
+      details = parse_job_page(url) 
+      render json: details
     rescue => e
-      render json: { error: e.message }, status: :internal_server_error
+      render json: { error: e.message, status: :internal_server_error }
     end
   end
 end

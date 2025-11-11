@@ -5,7 +5,7 @@ Given("the parser will return job details for {string}") do |url|
   html = <<~HTML
     <html>
       <head>
-        <title>Senior Engineer – ACME</title>
+        <title>Job Title – ACME</title>
         <meta property="og:site_name" content="ACME Corp">
       </head>
       <body></body>

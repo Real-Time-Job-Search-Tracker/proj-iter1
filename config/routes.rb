@@ -8,11 +8,12 @@ Rails.application.routes.draw do
   root "jobs#index"
 
   get  "/dashboard", to: "dashboard#show", as: :dashboard
-  get "dashboard/stats", to: "dashboard#stats", as: :stats_dashboard, defaults: { format: :json }
+  get "dashboard/stats", to: "dashboard#stats", as: :dashboard_stats, defaults: { format: :json }
 
   resources :applications, only: [ :index, :create, :update, :destroy, :new, :edit ]
-  get "/applications/stats", to: "applications#stats"
+  get "/applications/stats", to: "applications#stats" 
 
   resources :jobs, only: [ :index ]
-  get "jobs/inspect"
+
+  get "jobs/inspect", to: "jobs#inspect", as: :inspect_job, defaults: { format: :json }
 end

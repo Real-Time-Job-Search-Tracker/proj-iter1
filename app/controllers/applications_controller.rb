@@ -26,43 +26,35 @@ class ApplicationsController < ApplicationController
 
   def create
     url = params[:url].to_s.strip
-
-    # 1) Validate URL
-    unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
-      return redirect_to(new_application_path, alert: "Please enter a valid URL")
-    end
-
     company = params[:company].to_s.strip
     title   = params[:title].to_s.strip
     status  = params[:status].presence || "Applied"
 
-    # 2) Enrich from the job page if company/title are blank
     if company.blank? || title.blank?
-      parsed = parse_job_page(url) # uses HTTParty/Nokogiri (stubbable by your step)
+      parsed = parse_job_page(url)
       company = parsed[:company] if company.blank? && parsed[:company].present?
       title   = parsed[:title]   if title.blank?   && parsed[:title].present?
     end
 
-    # 3) Fallback guesses
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
-    app = JobApplication.new(url: url, company: company, title: title, status: status)
+    @application = JobApplication.new(url: url, company: company, title: title, status: status)
 
-    if app.save
-      app.push_status!(status) if app.respond_to?(:push_status!) && status.present?
+    if @application.save
+      @application.push_status!(status) if @application.respond_to?(:push_status!) && status.present?
 
       flash[:notice] = "Application added"
       respond_to do |fmt|
-        fmt.html { redirect_to jobs_path }
-        fmt.json { render json: app.slice(:id, :url, :company, :title, :status), status: :created }
+        fmt.html { redirect_to root_path }
+        fmt.json { render json: @application.slice(:id, :url, :company, :title, :status), status: :created }
       end
     else
-      Rails.logger.debug("JobApplication save errors: \\#{app.errors.full_messages}")
-      msg = app.errors.full_messages.to_sentence
-      flash[:alert] = msg
+      Rails.logger.debug("JobApplication save errors: \\#{@application.errors.full_messages}")
+      msg = @application.errors.full_messages.to_sentence
+      flash.now[:alert] = msg
       respond_to do |fmt|
-        fmt.html { redirect_back fallback_location: new_application_path, alert: msg }
+        fmt.html { render :new, status: :unprocessable_entity }
         fmt.json { render json: { error: msg }, status: :unprocessable_entity }
       end
     end
@@ -92,7 +84,7 @@ class ApplicationsController < ApplicationController
   end
 
   def new
-    # render form
+    @application = JobApplication.new
   end
 
 
@@ -133,28 +125,56 @@ class ApplicationsController < ApplicationController
     render json: { nodes: nodes, links: links }
   end
 
-  private
-
-  # Parses the job page to extract company and title details
-  def parse_job_page(url)
-    require "httparty"
-    require "nokogiri"
-
-    response = HTTParty.get(url)
-    page = Nokogiri::HTML(response.body)
-
-    # Example parsing logic (adjust selectors based on actual job page structure)
-    company = page.at_css("meta[property='og:site_name']")&.[]("content") ||
-              page.at_css(".company-name")&.text&.strip
-
-    title = page.at_css("meta[property='og:title']")&.[]("content") ||
-            page.at_css(".job-title")&.text&.strip
-
-    { company: company, title: title }
-  rescue StandardError => e
-    Rails.logger.error("Failed to parse job page: \\#{e.message}")
-    {}
+  module JobParser
+    extend ActiveSupport::Concern
+  
+    private
+  
+    def parse_job_page(url)
+      require "httparty"
+      require "nokogiri"
+  
+      response = HTTParty.get(url, headers: { "User-Agent" => "Mozilla/5.0" }, timeout: 10)
+      page = Nokogiri::HTML(response.body)
+  
+      company = page.at_css("meta[property='og:site_name']")&.[]("content") ||
+                page.at_css(".company-name")&.text&.strip
+  
+      title = page.at_css("meta[property='og:title']")&.[]("content") ||
+              page.at_css(".job-title")&.text&.strip ||
+              page.at_css("title")&.text&.strip
+  
+      if title.present?
+        title.sub!(/–\s*#{Regexp.escape(company)}\s*$/i, "") if company.present?
+        title.sub!(/\s*at\s*#{Regexp.escape(company)}\s*$/i, "") if company.present?
+        title.sub!(/\|.*/, "")
+        title.strip!
+      end
+  
+      { company: company, title: title }
+    rescue StandardError => e
+      Rails.logger.error("Failed to parse job page: \\#{e.message}")
+      {}
+    end
+  
+    def infer_company_from_url(url)
+      host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
+      if host.include?("greenhouse")
+        m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
+        return m[1].tr("-", " ").capitalize if m
+      elsif host.include?("lever.co")
+        seg = URI.parse(url).path.split("/").reject(&:blank?).first
+        return seg.tr("-", " ").capitalize if seg
+      end
+      host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
+    rescue
+      "Unknown"
+    end
   end
+  
+  include JobParser
+
+  private
 
   def load_fake_jobs
     path = Rails.root.join("db", "fake_jobs.json")
@@ -235,26 +255,11 @@ class ApplicationsController < ApplicationController
       end
     end
 
-    # Return Array<{source:, target:, value:, cls:}>
     counts.map do |(source_idx, target_idx), w|
       { source: source_idx, target: target_idx, value: w, cls: classes[[ source_idx, target_idx ]] }
     end
   end
 
-
-  def infer_company_from_url(url)
-    host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
-    if host.include?("greenhouse")
-      m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
-      return m[1].tr("-", " ").capitalize if m
-    elsif host.include?("lever.co")
-      seg = URI.parse(url).path.split("/").reject(&:blank?).first
-      return seg.tr("-", " ").capitalize if seg
-    end
-    host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
-  rescue
-    "Unknown"
-  end
 
   def stage_label(raw)
     s = raw.to_s.strip.downcase

@@ -1,6 +1,11 @@
+
 require 'simplecov'
 SimpleCov.command_name 'Cucumber'
-SimpleCov.start 'rails'
+SimpleCov.start 'rails' do
+  add_filter '/spec/'
+  add_filter '/config/'
+  add_filter '/vendor/'
+end
 
 require 'cucumber/rails'
 require 'capybara'
@@ -15,10 +20,22 @@ Capybara.javascript_driver = :selenium_chrome_headless
 Capybara.default_max_wait_time = 3
 WebMock.disable_net_connect!(allow_localhost: true)
 
-begin
-  DatabaseCleaner.strategy = :transaction
-rescue NameError
-  raise "You need to add database_cleaner to your Gemfile (in the :test group) if you wish to use it."
+Before do |scenario|
+ 
+  if scenario.tags.any? { |tag| tag.name == '@javascript' }
+    DatabaseCleaner.strategy = :truncation
+  else
+    DatabaseCleaner.strategy = :transaction
+  end
+  DatabaseCleaner.start
 end
 
-Cucumber::Rails::Database.javascript_strategy = :truncation
+After do
+  ActiveRecord::Base.logger.silence do
+    DatabaseCleaner.clean
+  end
+end
+
+After do
+  Capybara.reset_sessions!
+end

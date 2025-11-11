@@ -1,5 +1,5 @@
 When('I sign out') do
-  click_link "Sign out"
+  click_link "Signed out"
 end
 
 Then('I should be on the sign in page') do
