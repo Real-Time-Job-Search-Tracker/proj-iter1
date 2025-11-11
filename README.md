@@ -64,6 +64,7 @@ If PostgreSQL is not already installed and running, use the following commands:
     ```
     Run the following command before continue
     ```bash
+    rails -s
     rm -rf coverage
     ```
 
