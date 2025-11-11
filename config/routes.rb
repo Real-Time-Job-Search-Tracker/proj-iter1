@@ -14,5 +14,5 @@ Rails.application.routes.draw do
   get "/applications/stats", to: "applications#stats"
 
   resources :jobs, only: [ :index ]
-  get "jobs/inspect"
+  get "jobs/preview", to: "jobs#preview", defaults: { format: :json }
 end

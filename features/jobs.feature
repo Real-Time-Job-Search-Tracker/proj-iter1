@@ -1,4 +1,3 @@
-@javascript
 Feature: Job URL inspection
   As a user
   I want to inspect job URLs
@@ -12,7 +11,7 @@ Feature: Job URL inspection
     When I inspect the URL "https://jobs.workday.com/acme/job123"
     Then the response should be JSON
     And the JSON should include "ACME Corp"
-    And the JSON should include "Job Title"
+    And the JSON should include "Senior Engineer – ACME"
 
   Scenario: Inspect an invalid URL
     When I inspect the URL "not-a-url"

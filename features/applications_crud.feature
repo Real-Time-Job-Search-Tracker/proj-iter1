@@ -18,4 +18,4 @@ Feature: Update and delete applications
 
   Scenario: Visit new application form
     When I visit the new application page
-    Then I should see "Add Application"
+    Then I should see the Add Application form
