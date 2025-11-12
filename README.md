@@ -125,70 +125,7 @@ If PostgreSQL is not already installed and running, use the following commands:
 
 ## 7\. Heroku Deployment Instructions
 
-### Prerequisites
-
-  * You must have a Heroku account.
-  * You must have the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) installed.
-
-### Initial Deployment
-
-1.  **Log in to the Heroku CLI:**
-
-    ```bash
-    heroku login
-    ```
-
-2.  **Create a new Heroku application:**
-    You can either let Heroku pick a name or specify your own.
-
-    ```bash
-    # Let Heroku pick a name
-    heroku create
-
-    # Or specify a name (must be unique)
-    heroku create your-app-name-here
-    ```
-
-    This also adds a new `heroku` git remote to your local repository.
-
-3.  **Provision a PostgreSQL Database:**
-    Our app requires a database. This command adds the free `hobby-dev` tier.
-
-    ```bash
-    heroku addons:create heroku-postgresql:hobby-dev
-    ```
-
-4.  **Push your code to Heroku:**
-    This pushes your `main` branch to Heroku. Heroku automatically detects it's a Rails app, runs `bundle install`, and precompiles assets.
-
-    ```bash
-    git push heroku main
-    ```
-
-5.  **Run database migrations on Heroku:**
-    Your code is deployed, but the database is empty. This command runs the `db:migrate` task on the Heroku server.
-
-    ```bash
-    heroku run rails db:migrate
-    ```
-
-6.  **(Optional) Seed the production database:**
-    If you need to seed your live database, run this command:
-
-    ```bash
-    heroku run rails db:seed
-    ```
-
-7.  **Open your application:**
-    This will open your newly deployed application in your web browser.
-
-    ```bash
-    heroku open
-    ```
-
-### Subsequent Deploys
-
 For any future updates, you only need to:
 
-1.  Push your new code: `git push heroku main`
+1.  Push new code: `git push heroku main`
 2.  Run migrations *if* you added any new ones: `heroku run rails db:migrate`
