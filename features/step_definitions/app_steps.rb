@@ -96,14 +96,14 @@ Then("the status of {string} should be {string}") do |company, expected_status|
   expect(app.status).to eq(expected_status)
 end
 
-#When("I delete the job application for {string}") do |company|
-  #app = JobApplication.find_by!(company: company)
-  #page.driver.delete("/applications/#{app.id}")
-#end
+# When("I delete the job application for {string}") do |company|
+# app = JobApplication.find_by!(company: company)
+# page.driver.delete("/applications/#{app.id}")
+# end
 
-#Then("the job application for {string} should not exist") do |company|
-  #expect(JobApplication.find_by(company: company)).to be_nil
-#end
+# Then("the job application for {string} should not exist") do |company|
+# expect(JobApplication.find_by(company: company)).to be_nil
+# end
 
 When("I delete the job application for {string}") do |company|
   app = JobApplication.find_by(company: company)
@@ -124,5 +124,4 @@ Then("the job application for {string} should not exist") do |company|
   expect(JobApplication.find_by(company: company)).to be_nil
 end
 
-#build_links_from_paths
-
+# build_links_from_paths

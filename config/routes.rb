@@ -11,7 +11,7 @@ Rails.application.routes.draw do
   get "dashboard/stats", to: "dashboard#stats", as: :stats_dashboard, defaults: { format: :json }
 
   resources :applications, only: [ :index, :create, :update, :destroy, :new, :edit ]
-  get "/applications/stats", to: "applications#stats"
+  get "/applications/stats", to: "applications#stats", defaults: { format: :json }
 
   resources :jobs, only: [ :index ]
   get "jobs/preview", to: "jobs#preview", defaults: { format: :json }

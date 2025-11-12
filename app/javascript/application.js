@@ -9,17 +9,17 @@ const byId = (id) => document.getElementById(id);
 const meta = (name) =>
   document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") || "";
 
-
-
 // ---------- create: submit with status ----------
 async function hookForm() {
   const form = document.querySelector("#pasteForm");
   if (!form) return;
+  if (form._boundSubmit) return;
+  form._boundSubmit = true;
 
   const urlI = byId("jobUrl");
-  const coI = byId("jobCompany");
-  const tiI = byId("jobTitle");
-  const stI = byId("jobStatus");
+  const coI  = byId("jobCompany");
+  const tiI  = byId("jobTitle");
+  const stI  = byId("jobStatus");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ async function hookForm() {
     const payload = { url };
     if (coI && coI.value.trim()) payload.company = coI.value.trim();
     if (tiI && tiI.value.trim()) payload.title = tiI.value.trim();
-    if (stI && stI.value) payload.status = stI.value;
+    if (stI && stI.value)        payload.status = stI.value;
 
     try {
       if (submitBtn) submitBtn.disabled = true;
@@ -46,7 +46,6 @@ async function hookForm() {
         body: JSON.stringify(payload),
       });
 
-      // ⬇️ 这里是关键：失败就直接打印
       if (!res.ok) {
         const txt = await res.text();
         console.error("POST /applications failed:", res.status, txt);
@@ -54,14 +53,13 @@ async function hookForm() {
         return;
       }
 
-      // 成功才刷新
       await loadApps();
       await loadSankey();
 
       if (urlI) urlI.value = "";
-      if (coI) coI.value = "";
-      if (tiI) tiI.value = "";
-      if (stI) stI.value = "Applied";
+      if (coI)  coI.value  = "";
+      if (tiI)  tiI.value  = "";
+      if (stI)  stI.value  = "Applied";
     } catch (err) {
       console.error("[hookForm] submit failed:", err);
       alert("Submit failed, see console");
@@ -70,56 +68,6 @@ async function hookForm() {
     }
   });
 }
-
-// // ---------- create: submit with status ----------
-// function hookForm() {
-//   const form = document.querySelector("#pasteForm");
-//   if (!form) return;
-
-//   const urlI = byId("jobUrl");
-//   const coI = byId("jobCompany");
-//   const tiI = byId("jobTitle");
-//   const stI = byId("jobStatus");
-
-//   form.addEventListener("submit", async (e) => {
-//     e.preventDefault();
-
-//     const submitBtn = form.querySelector('[type="submit"]');
-//     const url = (urlI?.value || "").trim();
-//     if (!url) return;
-
-//     const payload = { url };
-//     if (coI && coI.value.trim()) payload.company = coI.value.trim();
-//     if (tiI && tiI.value.trim()) payload.title = tiI.value.trim();
-//     if (stI && stI.value) payload.status = stI.value;
-
-//     try {
-//       if (submitBtn) submitBtn.disabled = true;
-
-//       await fetch("/applications", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Accept: "application/json",
-//           "X-CSRF-Token": meta("csrf-token"),
-//         },
-//         body: JSON.stringify(payload),
-//       });
-
-//       if (urlI) urlI.value = "";
-//       if (coI) coI.value = "";
-//       if (tiI) tiI.value = "";
-//       if (stI) stI.value = "Applied";
-
-//       await loadApps();
-//       await loadSankey();
-//     } catch (err) {
-//       console.error("[hookForm] submit failed:", err);
-//     } finally {
-//       if (submitBtn) submitBtn.disabled = false;
-//     }
-//   });
-// }
 
 // ---------- index table ----------
 async function loadApps() {
@@ -226,14 +174,10 @@ async function loadSankey() {
     });
     if (!res.ok) throw new Error("stats failed");
     const data = await res.json();
-    
+
     if (Array.isArray(data.links)) {
       const src = [], tgt = [], val = [];
-      data.links.forEach((l) => {
-        src.push(l.source);
-        tgt.push(l.target);
-        val.push(l.value);
-      });
+      data.links.forEach((l) => { src.push(l.source); tgt.push(l.target); val.push(l.value); });
       data.links = { source: src, target: tgt, value: val };
     }
 
@@ -241,7 +185,7 @@ async function loadSankey() {
     const links = data.links || {};
     const src = links.source || [];
     const tgt = links.target || [];
-    const val = links.value || [];
+    const val = links.value  || [];
 
     const total = val.reduce((a, b) => a + (+b || 0), 0);
     if (!nodes.length || !src.length || !tgt.length || !val.length || total === 0) {
@@ -250,47 +194,21 @@ async function loadSankey() {
       return;
     }
 
-    const nodeColors = [
-      "#6f8cfb",
-      "#87d4a6",
-      "#b59dff",
-      "#9aa5b1",
-      "#7e8792",
-      "#a98e86",
-    ].slice(0, nodes.length);
+    const nodeColors = ["#6f8cfb","#87d4a6","#b59dff","#9aa5b1","#7e8792","#a98e86"].slice(0, nodes.length);
 
-    const plotData = [
-      {
-        type: "sankey",
-        orientation: "h",
-        arrangement: "snap",
-        node: {
-          label: nodes,
-          color: nodeColors,
-          pad: 18,
-          thickness: 18,
-          line: { color: "rgba(230,232,236,0.7)", width: 1 },
-        },
-        link: {
-          source: src,
-          target: tgt,
-          value: val,
-          color: "rgba(30,30,40,0.18)",
-          hovertemplate: "%{value} flow(s)<extra></extra>",
-        },
-      },
-    ];
+    const plotData = [{
+      type: "sankey",
+      orientation: "h",
+      arrangement: "snap",
+      node: { label: nodes, color: nodeColors, pad: 18, thickness: 18, line: { color: "rgba(230,232,236,0.7)", width: 1 } },
+      link: { source: src, target: tgt, value: val, color: "rgba(30,30,40,0.18)", hovertemplate: "%{value} flow(s)<extra></extra>" },
+    }];
 
     const layout = {
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       margin: { l: 12, r: 12, t: 10, b: 10 },
-      font: {
-        family:
-          "Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
-        size: 13,
-        color: "#12141a",
-      },
+      font: { family: "Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial", size: 13, color: "#12141a" },
       height: 420,
     };
 
@@ -316,15 +234,16 @@ async function loadSankey() {
 
 // ---------- boot ----------
 function boot() {
-  if (window.__jobtrackerBooted) return;
-  window.__jobtrackerBooted = true;
-
   hookForm();
   loadApps();
   loadSankey();
   enableReveal();
 }
 
+// Bind once per navigation/render; idempotent functions prevent duplication
 document.addEventListener("turbo:load", boot);
+document.addEventListener("turbo:render", boot);
 document.addEventListener("DOMContentLoaded", boot);
+
+// expose for debugging if you like
 Object.assign(window, { loadApps, loadSankey, boot });
