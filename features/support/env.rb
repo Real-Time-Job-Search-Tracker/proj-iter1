@@ -7,6 +7,8 @@ require 'capybara'
 require 'capybara/rails'
 require 'selenium-webdriver'
 require 'webmock/cucumber'
+# require_relative '../../app/helpers/application_helper'
+World(ApplicationHelper)
 
 ActionController::Base.allow_rescue = false
 
