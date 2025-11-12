@@ -15,11 +15,6 @@ When("I request the sankey JSON") do
   visit "/applications/stats.json"
 end
 
-Then("the response should be JSON") do
-  # Don’t rely on response headers (not supported by Selenium driver)
-  expect { JSON.parse(page.text) }.not_to raise_error, "Expected JSON, got HTML (starts with: #{page.text[0, 60].inspect})"
-end
-
 Then("the JSON should include a sankey node for {string}") do |label|
   data  = JSON.parse(page.text)
 

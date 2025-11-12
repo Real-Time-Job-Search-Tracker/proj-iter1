@@ -25,16 +25,16 @@ class ApplicationsController < ApplicationController
   end
 
   def create
-    url = params[:url].to_s.strip
+    # accept flat or nested form params
+    url     = (params[:url].presence || params.dig(:application, :url)).to_s.strip
+    company = (params[:company].presence || params.dig(:application, :company)).to_s.strip
+    title   = (params[:title].presence || params.dig(:application, :title)).to_s.strip
+    status  = (params[:status].presence || params.dig(:application, :status)).presence || "Applied"
 
     # 1) Validate URL
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
       return redirect_to(new_application_path, alert: "Please enter a valid URL")
     end
-
-    company = params[:company].to_s.strip
-    title   = params[:title].to_s.strip
-    status  = params[:status].presence || "Applied"
 
     # 2) Enrich from the job page if company/title are blank
     if company.blank? || title.blank?

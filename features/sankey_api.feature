@@ -1,4 +1,3 @@
-@javascript
 Feature: Sankey JSON
   As a user
   I want the sankey endpoint to reflect my pipeline
