@@ -114,18 +114,17 @@ If PostgreSQL is not already installed and running, use the following commands:
 
 ### Testing
 
-1.  **Run RSpec (Unit/Model/Controller Tests):**
-    This executes all tests in the `spec/` directory.
-
-    ```bash
-    bundle exec rspec
-    ```
-
-2.  **Run Cucumber (User Stories / Acceptance Tests):**
+1.  **Run Cucumber (User Stories / Acceptance Tests):**
     This executes all features in the `features/` directory.
 
     ```bash
     bundle exec cucumber
+    ```
+2.  **Run RSpec (Unit/Model/Controller Tests):**
+    This executes all tests in the `spec/` directory.
+
+    ```bash
+    bundle exec rspec
     ```
 
 ## 7\. Heroku Deployment Instructions
