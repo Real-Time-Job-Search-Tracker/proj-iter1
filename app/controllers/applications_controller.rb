@@ -194,7 +194,7 @@ class ApplicationsController < ApplicationController
     end
   end
 
-  def collect_rounds_from_histories(histories)
+  def collect_rounds_from_histories(histories) 
     labs = Set.new
     histories.each do |hist|
       Array(hist).each do |h|
