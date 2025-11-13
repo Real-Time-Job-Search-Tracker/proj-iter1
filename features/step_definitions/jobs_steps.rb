@@ -1,8 +1,10 @@
 require "cgi"
 require "json"
 
-When('I inspect the URL {string}') do |url|
-  visit "/jobs/preview.json?url=#{CGI.escape(url)}"
+When("I inspect the URL {string}") do |url|
+  Capybara.current_driver = :rack_test
+  page.driver.header 'Accept', 'application/json'
+  visit inspect_job_path(job_url: url)
 end
 
 Then('the JSON should include {string}') do |text|

@@ -7,7 +7,11 @@ Rails.application.routes.draw do
 
   root "jobs#index"
 
-  get  "/dashboard", to: "dashboard#show", as: :dashboard
+  get "/jobs/inspect", to: "jobs#inspect", as: :inspect_job
+
+  get "/sankey", to: "sankey#index", as: :sankey_api
+
+  get "/dashboard", to: "dashboard#show", as: :dashboard
   get "dashboard/stats", to: "dashboard#stats", as: :stats_dashboard, defaults: { format: :json }
 
   resources :applications, only: [ :index, :create, :update, :destroy, :new, :edit ]

@@ -49,7 +49,7 @@
     </div>
 
     <%# === Simple server-rendered list the steps can query === %>
-    <ul id="applications">
+    <ul id="applications" style="display:none;">
       <% JobApplication.order(created_at: :desc).each do |app| %>
         <li data-company="<%= app.company %>">
           <span class="company"><%= app.company %></span>

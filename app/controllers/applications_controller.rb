@@ -25,25 +25,35 @@ class ApplicationsController < ApplicationController
   end
 
   def create
-    # accept flat or nested form params
+    Rails.logger.debug("Create params: #{params.inspect}")
+
     url     = (params[:url].presence || params.dig(:application, :url)).to_s.strip
     company = (params[:company].presence || params.dig(:application, :company)).to_s.strip
     title   = (params[:title].presence || params.dig(:application, :title)).to_s.strip
     status  = (params[:status].presence || params.dig(:application, :status)).presence || "Applied"
 
-    # 1) Validate URL
+
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
-      return redirect_to(new_application_path, alert: "Please enter a valid URL")
+      respond_to do |format|
+        format.html do
+          flash[:alert] = "Please enter a valid URL"
+          redirect_to new_application_path
+        end
+        format.json do
+          render json: { error: "Please enter a valid URL" }, status: :unprocessable_entity
+        end
+      end
+      return
     end
 
-    # 2) Enrich from the job page if company/title are blank
-    if company.blank? || title.blank?
-      parsed = parse_job_page(url) # uses HTTParty/Nokogiri (stubbable by your step)
+
+    if (company.blank? || title.blank?) && url !~ /(greenhouse\.io|lever\.co)/i
+      parsed = parse_job_page(url)
       company = parsed[:company] if company.blank? && parsed[:company].present?
       title   = parsed[:title]   if title.blank?   && parsed[:title].present?
     end
 
-    # 3) Fallback guesses
+
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
@@ -51,14 +61,12 @@ class ApplicationsController < ApplicationController
 
     if app.save
       app.push_status!(status) if app.respond_to?(:push_status!) && status.present?
-
       flash[:notice] = "Application added"
       respond_to do |fmt|
         fmt.html { redirect_to jobs_path }
         fmt.json { render json: app.slice(:id, :url, :company, :title, :status), status: :created }
       end
     else
-      Rails.logger.debug("JobApplication save errors: \\#{app.errors.full_messages}")
       msg = app.errors.full_messages.to_sentence
       flash[:alert] = msg
       respond_to do |fmt|
@@ -97,40 +105,28 @@ class ApplicationsController < ApplicationController
 
 
   def stats
-    nodes = [
-      "Applications",
-      "Applied",
-      "Round1",
-      "Round2",
-      "Offer",
-      "Accepted",
-      "Declined",
-      "Ghosted"
-    ]
+    apps = JobApplication.all
 
-    raw_links = {
-      source: [ 0, 0, 1, 2, 3, 3 ],
-      target: [ 1, 6, 2, 3, 4, 5 ],
-      value: [ 250, 150, 120, 40, 25, 15 ],
-      cls: [
-        "apps_to_round",
-        "apps_to_ghosted",
-        "round_to_round",
-        "round_to_offer",
-        "offer_to_accepted",
-        "offer_to_declined"
-      ]
-    }
-    links = raw_links[:source].each_with_index.map do |src, i|
-    {
-      source: src,
-      target: raw_links[:target][i],
-      value: raw_links[:value][i],
-      cls: raw_links[:cls][i]
-    }
-  end
-
-    render json: { nodes: nodes, links: links }
+    if apps.exists?
+      paths = apps.map { |app| canonical_path(app.history, app.status) }
+      rounds = collect_rounds_from_histories(apps.map(&:history))
+      nodes  = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
+      nodes.uniq!
+      links  = build_links_from_paths(paths, nodes)
+      render json: { nodes: nodes, links: links }
+    else
+      nodes = [ "Applications", "Applied", "Round1", "Round2", "Offer", "Accepted", "Declined", "Ghosted" ]
+      raw_links = {
+        source: [ 0, 0, 1, 2, 3, 3 ],
+        target: [ 1, 6, 2, 3, 4, 5 ],
+        value:  [ 250, 150, 120, 40, 25, 15 ],
+        cls:    [ "apps_to_round", "apps_to_ghosted", "round_to_round", "round_to_offer", "offer_to_accepted", "offer_to_declined" ]
+      }
+      links = raw_links[:source].each_with_index.map do |src, i|
+        { source: src, target: raw_links[:target][i], value: raw_links[:value][i], cls: raw_links[:cls][i] }
+      end
+      render json: { nodes: nodes, links: links }
+    end
   end
 
   private
@@ -241,20 +237,55 @@ class ApplicationsController < ApplicationController
     end
   end
 
+  def humanize_company(slug)
+    s = slug.to_s.tr("-", " ").strip
+    parts = s.split
+    return s if parts.empty?
+    first = parts.first.capitalize
+    rest  = parts.drop(1).map(&:lowercase) rescue parts.drop(1).map(&:downcase)
+    ([ first ] + rest).join(" ")
+  end
 
   def infer_company_from_url(url)
-    host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
-    if host.include?("greenhouse")
-      m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
-      return m[1].tr("-", " ").capitalize if m
-    elsif host.include?("lever.co")
-      seg = URI.parse(url).path.split("/").reject(&:blank?).first
-      return seg.tr("-", " ").capitalize if seg
+    uri  = URI.parse(url)
+    host = uri.host.to_s.downcase.sub(/^www\./, "")
+    path = uri.path.to_s
+
+    # Greenhouse
+    if host.include?("greenhouse.io")
+      if (m = url.match(%r{boards\.greenhouse\.io/([^/]+)/}i))
+        return humanize_company(m[1])
+      end
+      if (m = url.match(/[\?&]for=([^&]+)/i))
+        return humanize_company(CGI.unescape(m[1].to_s))
+      end
     end
-    host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
+
+    # Lever
+    if host.end_with?("lever.co")
+      seg = path.split("/").reject(&:blank?).first
+      return humanize_company(seg) if seg
+    end
+
+    base = host.split(".")[-2].to_s
+    base.present? ? humanize_company(base) : "Unknown"
   rescue
     "Unknown"
   end
+
+  # def infer_company_from_url(url)
+  #   host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
+  #   if host.include?("greenhouse")
+  #     m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
+  #     return m[1].tr("-", " ").capitalize if m
+  #   elsif host.include?("lever.co")
+  #     seg = URI.parse(url).path.split("/").reject(&:blank?).first
+  #     return seg.tr("-", " ").capitalize if seg
+  #   end
+  #   host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
+  # rescue
+  #   "Unknown"
+  # end
 
   def stage_label(raw)
     s = raw.to_s.strip.downcase
@@ -273,8 +304,8 @@ class ApplicationsController < ApplicationController
   end
 
   def canonical_path(history, current_status)
-    labels = Array(history).sort_by { |h| h["ts"].to_s }.map { |h| Sankey::Builder.stage_label(h["status"]) }
-    now = Sankey::Builder.stage_label(current_status)
+    labels = Array(history).sort_by { |h| h["ts"].to_s }.map { |h| stage_label(h["status"]) }
+    now = stage_label(current_status)
     labels << now if labels.last != now
     labels = labels.chunk_while { |a, b| a == b }.map(&:first)
     labels.unshift("Applications") unless labels.first == "Applications"
