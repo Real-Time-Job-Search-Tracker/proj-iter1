@@ -88,7 +88,7 @@ RSpec.describe "Applications", type: :request do
       allow_any_instance_of(JobApplication).to receive(:save).and_return(false)
       allow_any_instance_of(JobApplication)
         .to receive_message_chain(:errors, :full_messages)
-        .and_return(["URL can't be blank"])
+        .and_return([ "URL can't be blank" ])
 
       post "/applications",
           params: {

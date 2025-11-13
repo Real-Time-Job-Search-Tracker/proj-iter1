@@ -3,7 +3,7 @@ Given("the following job applications exist:") do |table|
     JobApplication.create!(
       company: row["company"],
       url: row["url"],
-      title: row["title"],   
+      title: row["title"],
       status: row["status"]
     )
   end
@@ -55,7 +55,7 @@ end
 
 Then("only {string} should be visible in the jobs table") do |company|
   companies = all("ul#applications li", visible: false).map { |li| li["data-company"] }
-  expect(companies.select { |c| c == company }).to eq([company])
+  expect(companies.select { |c| c == company }).to eq([ company ])
 end
 
 When("I refresh the page") do

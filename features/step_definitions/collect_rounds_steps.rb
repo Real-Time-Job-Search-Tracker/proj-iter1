@@ -7,11 +7,11 @@ Before do
 end
 
 Given('the following job histories:') do |table|
-  @histories = [table.hashes]
+  @histories = [ table.hashes ]
 end
 
 Given('the following nested job histories:') do |table|
-  @histories = [table.hashes]
+  @histories = [ table.hashes ]
 end
 
 When('I collect rounds from histories') do

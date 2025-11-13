@@ -27,7 +27,7 @@ Given('the next job application will fail to save') do
 
   allow_any_instance_of(JobApplication)
     .to receive_message_chain(:errors, :full_messages)
-    .and_return(["Please enter a valid URL"])
+    .and_return([ "Please enter a valid URL" ])
 end
 
 When('I submit the new job application form') do

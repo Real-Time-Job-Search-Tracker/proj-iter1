@@ -25,7 +25,6 @@ class ApplicationsController < ApplicationController
   end
 
   def create
-  
     Rails.logger.debug("Create params: #{params.inspect}")
 
     url     = (params[:url].presence || params.dig(:application, :url)).to_s.strip
@@ -47,14 +46,14 @@ class ApplicationsController < ApplicationController
       return
     end
 
-  
+
     if (company.blank? || title.blank?) && url !~ /(greenhouse\.io|lever\.co)/i
       parsed = parse_job_page(url)
       company = parsed[:company] if company.blank? && parsed[:company].present?
       title   = parsed[:title]   if title.blank?   && parsed[:title].present?
     end
 
-  
+
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
@@ -111,17 +110,17 @@ class ApplicationsController < ApplicationController
     if apps.exists?
       paths = apps.map { |app| canonical_path(app.history, app.status) }
       rounds = collect_rounds_from_histories(apps.map(&:history))
-      nodes  = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+      nodes  = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
       nodes.uniq!
       links  = build_links_from_paths(paths, nodes)
       render json: { nodes: nodes, links: links }
     else
-      nodes = ["Applications","Applied","Round1","Round2","Offer","Accepted","Declined","Ghosted"]
+      nodes = [ "Applications", "Applied", "Round1", "Round2", "Offer", "Accepted", "Declined", "Ghosted" ]
       raw_links = {
-        source: [0,0,1,2,3,3],
-        target: [1,6,2,3,4,5],
-        value:  [250,150,120,40,25,15],
-        cls:    ["apps_to_round","apps_to_ghosted","round_to_round","round_to_offer","offer_to_accepted","offer_to_declined"]
+        source: [ 0, 0, 1, 2, 3, 3 ],
+        target: [ 1, 6, 2, 3, 4, 5 ],
+        value:  [ 250, 150, 120, 40, 25, 15 ],
+        cls:    [ "apps_to_round", "apps_to_ghosted", "round_to_round", "round_to_offer", "offer_to_accepted", "offer_to_declined" ]
       }
       links = raw_links[:source].each_with_index.map do |src, i|
         { source: src, target: raw_links[:target][i], value: raw_links[:value][i], cls: raw_links[:cls][i] }
@@ -191,7 +190,7 @@ class ApplicationsController < ApplicationController
     end
   end
 
-  def collect_rounds_from_histories(histories) 
+  def collect_rounds_from_histories(histories)
     labs = Set.new
     histories.each do |hist|
       Array(hist).each do |h|
@@ -244,7 +243,7 @@ class ApplicationsController < ApplicationController
     return s if parts.empty?
     first = parts.first.capitalize
     rest  = parts.drop(1).map(&:lowercase) rescue parts.drop(1).map(&:downcase)
-    ([first] + rest).join(" ")
+    ([ first ] + rest).join(" ")
   end
 
   def infer_company_from_url(url)
@@ -269,7 +268,7 @@ class ApplicationsController < ApplicationController
     end
 
     base = host.split(".")[-2].to_s
-    return base.present? ? humanize_company(base) : "Unknown"
+    base.present? ? humanize_company(base) : "Unknown"
   rescue
     "Unknown"
   end
