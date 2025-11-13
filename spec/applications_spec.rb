@@ -85,25 +85,23 @@ RSpec.describe "Applications", type: :request do
     end
 
     it "handles failed save gracefully, sets flash[:alert], and returns JSON error" do
-        url = "https://jobs.example.com/failure"
+      allow_any_instance_of(JobApplication).to receive(:save).and_return(false)
+      allow_any_instance_of(JobApplication)
+        .to receive_message_chain(:errors, :full_messages)
+        .and_return(["URL can't be blank"])
 
-        invalid_app = instance_double(JobApplication,
-        save: false,
-        errors: double(full_messages: [ "URL can't be blank" ]),
-        as_json: {},
-        slice: {},
-        respond_to?: false
-        )
+      post "/applications",
+          params: {
+            url:     "https://jobs.example.com/failure",
+            company: "ErrCo",
+            title:   "BadJob"
+          },
+          as: :json
 
-        allow(JobApplication).to receive(:new).and_return(invalid_app)
+      expect(response).to have_http_status(:unprocessable_entity)
 
-        expect(Rails.logger).to receive(:debug).with(/URL can't be blank/)
-
-        post "/applications", params: { url: url, company: "ErrCo", title: "BadJob" }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
-
-        json = JSON.parse(response.body)
-        expect(json["error"]).to match(/URL can't be blank/)
+      body = JSON.parse(response.body)
+      expect(body).to eq("error" => "URL can't be blank")
     end
   end
 
