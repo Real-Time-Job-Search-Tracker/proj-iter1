@@ -28,6 +28,23 @@ The live SaaS prototype is deployed to Heroku:
 
 `https://flowtrack-7b01930f8bf1.herokuapp.com`
 
+Currently, registering a user must be done as follows:
+```bash
+$ heroku run rails console -a flowtrack
+```
+
+In the Heroku console, type:
+```bash
+User.create!(
+  email: "user@domain.com",
+  password: "password",
+  password_confirmation: "password"
+)
+```
+Currently, we have an account that anyone can login to. Here are the credentials:
+- Email: `test@example.com`
+- Password: `testtest123`
+
 ## 5\. GitHub Repository
 
 The source code is available on GitHub:
