@@ -97,40 +97,28 @@ class ApplicationsController < ApplicationController
 
 
   def stats
-    nodes = [
-      "Applications",
-      "Applied",
-      "Round1",
-      "Round2",
-      "Offer",
-      "Accepted",
-      "Declined",
-      "Ghosted"
-    ]
+    apps = JobApplication.all
 
-    raw_links = {
-      source: [ 0, 0, 1, 2, 3, 3 ],
-      target: [ 1, 6, 2, 3, 4, 5 ],
-      value: [ 250, 150, 120, 40, 25, 15 ],
-      cls: [
-        "apps_to_round",
-        "apps_to_ghosted",
-        "round_to_round",
-        "round_to_offer",
-        "offer_to_accepted",
-        "offer_to_declined"
-      ]
-    }
-    links = raw_links[:source].each_with_index.map do |src, i|
-    {
-      source: src,
-      target: raw_links[:target][i],
-      value: raw_links[:value][i],
-      cls: raw_links[:cls][i]
-    }
-  end
-
-    render json: { nodes: nodes, links: links }
+    if apps.exists?
+      paths = apps.map { |app| canonical_path(app.history, app.status) }
+      rounds = collect_rounds_from_histories(apps.map(&:history))
+      nodes  = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+      nodes.uniq!
+      links  = build_links_from_paths(paths, nodes)
+      render json: { nodes: nodes, links: links }
+    else
+      nodes = ["Applications","Applied","Round1","Round2","Offer","Accepted","Declined","Ghosted"]
+      raw_links = {
+        source: [0,0,1,2,3,3],
+        target: [1,6,2,3,4,5],
+        value:  [250,150,120,40,25,15],
+        cls:    ["apps_to_round","apps_to_ghosted","round_to_round","round_to_offer","offer_to_accepted","offer_to_declined"]
+      }
+      links = raw_links[:source].each_with_index.map do |src, i|
+        { source: src, target: raw_links[:target][i], value: raw_links[:value][i], cls: raw_links[:cls][i] }
+      end
+      render json: { nodes: nodes, links: links }
+    end
   end
 
   private
@@ -273,8 +261,8 @@ class ApplicationsController < ApplicationController
   end
 
   def canonical_path(history, current_status)
-    labels = Array(history).sort_by { |h| h["ts"].to_s }.map { |h| Sankey::Builder.stage_label(h["status"]) }
-    now = Sankey::Builder.stage_label(current_status)
+    labels = Array(history).sort_by { |h| h["ts"].to_s }.map { |h| stage_label(h["status"]) }
+    now = stage_label(current_status)
     labels << now if labels.last != now
     labels = labels.chunk_while { |a, b| a == b }.map(&:first)
     labels.unshift("Applications") unless labels.first == "Applications"
