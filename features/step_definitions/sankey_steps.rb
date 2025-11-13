@@ -10,9 +10,11 @@ Given("an application exists for {string} in stage {string}") do |company, stage
   )
 end
 
+
 When("I request the sankey JSON") do
-  # page.driver.browser.execute_cdp("Network.setExtraHTTPHeaders", headers: { "ACCEPT" => "application/json" })
-  visit "/applications/stats.json"
+  Capybara.current_driver = :rack_test
+  page.driver.header 'Accept', 'application/json'
+  visit sankey_api_path
 end
 
 Then("the JSON should include a sankey node for {string}") do |label|

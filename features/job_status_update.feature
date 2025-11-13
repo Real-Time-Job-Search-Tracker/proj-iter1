@@ -1,3 +1,4 @@
+@javascript
 Feature: Update job application status
   As a user
   I want to update the status of a job
