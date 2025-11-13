@@ -25,26 +25,36 @@ class ApplicationsController < ApplicationController
   end
 
   def create
-    # accept flat or nested form params
+  
+    Rails.logger.debug("Create params: #{params.inspect}")
+
     url     = (params[:url].presence || params.dig(:application, :url)).to_s.strip
     company = (params[:company].presence || params.dig(:application, :company)).to_s.strip
     title   = (params[:title].presence || params.dig(:application, :title)).to_s.strip
     status  = (params[:status].presence || params.dig(:application, :status)).presence || "Applied"
 
-    # 1) Validate URL
+
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
-      return redirect_to(new_application_path, alert: "Please enter a valid URL")
+      respond_to do |format|
+        format.html do
+          flash[:alert] = "Please enter a valid URL"
+          redirect_to new_application_path
+        end
+        format.json do
+          render json: { error: "Please enter a valid URL" }, status: :unprocessable_entity
+        end
+      end
+      return
     end
 
-    # 2) Enrich from the job page if company/title are blank
-    #    注意：Greenhouse/Lever 直接用 URL 推断，不去发 HTTP
+  
     if (company.blank? || title.blank?) && url !~ /(greenhouse\.io|lever\.co)/i
-      parsed = parse_job_page(url) # HTTParty/Nokogiri，可在步骤里 stub
+      parsed = parse_job_page(url)
       company = parsed[:company] if company.blank? && parsed[:company].present?
       title   = parsed[:title]   if title.blank?   && parsed[:title].present?
     end
 
-    # 3) Fallback guesses
+  
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
@@ -52,14 +62,12 @@ class ApplicationsController < ApplicationController
 
     if app.save
       app.push_status!(status) if app.respond_to?(:push_status!) && status.present?
-
       flash[:notice] = "Application added"
       respond_to do |fmt|
         fmt.html { redirect_to jobs_path }
         fmt.json { render json: app.slice(:id, :url, :company, :title, :status), status: :created }
       end
     else
-      Rails.logger.debug("JobApplication save errors: \\#{app.errors.full_messages}")
       msg = app.errors.full_messages.to_sentence
       flash[:alert] = msg
       respond_to do |fmt|

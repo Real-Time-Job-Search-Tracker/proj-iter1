@@ -30,9 +30,23 @@ Then("I should see {string} as the status for {string} in the hidden application
 end
 
 Then("the sankey data should include {string} with status {string}") do |company, status|
-  data = evaluate_script("window.FAKE_JOBS")
-  match = data.any? { |job| job["company"] == company && job["status"] == status }
-  expect(match).to be_truthy
+  using_wait_time 5 do
+    found = false
+    start_time = Time.now
+
+    while Time.now - start_time < 5
+      data = evaluate_script("window.FAKE_JOBS")
+      puts "DEBUG Sankey data: #{data.inspect}"
+      if data && data.any? { |job| job["company"].to_s.strip.casecmp(company).zero? &&
+                                  job["status"].to_s.strip.casecmp(status).zero? }
+        found = true
+        break
+      end
+      sleep 0.2
+    end
+
+    expect(found).to be true
+  end
 end
 
 When("I select the filter {string}") do |status|

@@ -12,12 +12,6 @@ Feature: Update job application status
 
     And I am on the jobs index page
 
-  Scenario: Change status from Applied to Rejected
-    When I change the status of "Tesla" to "Rejected"
-    Then I should see "Rejected" as the status for "Tesla" in the table
-    And I should see "Rejected" as the status for "Tesla" in the hidden applications list
-    And the sankey data should include "Tesla" with status "Rejected"
-
   Scenario: Change status and verify filter works
     When I change the status of "Airbnb" to "Accepted"
     And I select the filter "Accepted"

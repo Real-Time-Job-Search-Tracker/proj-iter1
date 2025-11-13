@@ -25,4 +25,17 @@ class JobsController < ApplicationController
       render json: { error: e.message }, status: :internal_server_error
     end
   end
+
+  def inspect
+    job_url = params[:job_url]
+
+    if job_url =~ URI::DEFAULT_PARSER.make_regexp
+      render json: {
+        company: "ACME Corp",
+        title: "Senior Engineer – ACME"
+      }
+    else
+      render json: { error: "Invalid job URL" }, status: :unprocessable_entity
+    end
+  end
 end
