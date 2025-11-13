@@ -77,5 +77,5 @@
 </div>
 
 <script>
-  window.FAKE_JOBS = JSON.parse(<%= (@jobs || []).to_json.to_json %>);
+  window.FAKE_JOBS = <%= raw((@jobs || []).to_json) %>;
 </script>

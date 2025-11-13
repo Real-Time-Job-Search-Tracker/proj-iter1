@@ -76,3 +76,52 @@ end
 Then("I should not see {string}") do |content|
   expect(page).to have_no_text(content, wait: 5)
 end
+
+Given("there is a job application for {string} with title {string} and status {string}") do |company, title, status|
+  JobApplication.create!(
+    company: company,
+    title: title,
+    status: status,
+    url: "https://example.com/#{company.parameterize}"
+  )
+end
+
+When("I update the status of {string} to {string}") do |company, new_status|
+  app = JobApplication.find_by!(company: company)
+  page.driver.put("/applications/#{app.id}", { status: new_status })
+end
+
+Then("the status of {string} should be {string}") do |company, expected_status|
+  app = JobApplication.find_by!(company: company)
+  expect(app.status).to eq(expected_status)
+end
+
+# When("I delete the job application for {string}") do |company|
+# app = JobApplication.find_by!(company: company)
+# page.driver.delete("/applications/#{app.id}")
+# end
+
+# Then("the job application for {string} should not exist") do |company|
+# expect(JobApplication.find_by(company: company)).to be_nil
+# end
+
+When("I delete the job application for {string}") do |company|
+  app = JobApplication.find_by(company: company)
+  raise "No job application found for #{company}" unless app
+
+  if page.current_path.include?("/applications")
+    if page.has_button?("Delete", wait: 0.5)
+      click_button("Delete")
+    else
+      page.driver.delete("/applications/#{app.id}")
+    end
+  else
+    page.driver.delete("/applications/#{app.id}")
+  end
+end
+
+Then("the job application for {string} should not exist") do |company|
+  expect(JobApplication.find_by(company: company)).to be_nil
+end
+
+# build_links_from_paths

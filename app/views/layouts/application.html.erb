@@ -20,6 +20,19 @@
     <div class="brand">JobTracker<span class="dot">•</span></div>
     <nav class="nav-actions">
       <%= link_to "Overview", root_path %>
+      <% if signed_in? %>
+        <%= button_to "Sign out",
+              sign_out_path,
+              method: :delete,
+              form: { class: "inline-form" },
+              class: "nav-link as-link" %>
+      <% else %>
+        <%= button_to "Sign in",
+              sign_in_path,
+              method: :get,
+              form: { class: "inline-form" },
+              class: "nav-link as-link" %>
+      <% end %>
     </nav>
   </header>
 
