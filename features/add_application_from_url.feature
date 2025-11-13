@@ -20,3 +20,21 @@ Feature: Add an application from a final-apply URL
     And I submit the form
     Then I should see "Please enter a valid URL"
     And I should not see "ACME Corp"
+  Scenario: Enrich company/title from parsed page
+    Given the parser will return job details for "https://jobs.example.com/acme/123"
+    When I paste "https://jobs.example.com/acme/123" into the Add Application form
+    And I submit the form
+    Then I should see "Application added"
+    And I should see "ACME Corp" within the applications list
+
+  Scenario: Infer company from Greenhouse URL
+    When I paste "https://boards.greenhouse.io/mega-corp/jobs/42" into the Add Application form
+    And I submit the form
+    Then I should see "Application added"
+    And I should see "Mega corp" within the applications list
+
+  Scenario: Infer company from Lever URL
+    When I paste "https://jobs.lever.co/startup-xyz/abcdef" into the Add Application form
+    And I submit the form
+    Then I should see "Application added"
+    And I should see "Startup xyz" within the applications list

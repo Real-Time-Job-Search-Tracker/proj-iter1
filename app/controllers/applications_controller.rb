@@ -37,8 +37,9 @@ class ApplicationsController < ApplicationController
     end
 
     # 2) Enrich from the job page if company/title are blank
-    if company.blank? || title.blank?
-      parsed = parse_job_page(url) # uses HTTParty/Nokogiri (stubbable by your step)
+    #    注意：Greenhouse/Lever 直接用 URL 推断，不去发 HTTP
+    if (company.blank? || title.blank?) && url !~ /(greenhouse\.io|lever\.co)/i
+      parsed = parse_job_page(url) # HTTParty/Nokogiri，可在步骤里 stub
       company = parsed[:company] if company.blank? && parsed[:company].present?
       title   = parsed[:title]   if title.blank?   && parsed[:title].present?
     end
@@ -229,20 +230,55 @@ class ApplicationsController < ApplicationController
     end
   end
 
+  def humanize_company(slug)
+    s = slug.to_s.tr("-", " ").strip
+    parts = s.split
+    return s if parts.empty?
+    first = parts.first.capitalize
+    rest  = parts.drop(1).map(&:lowercase) rescue parts.drop(1).map(&:downcase)
+    ([first] + rest).join(" ")
+  end
 
   def infer_company_from_url(url)
-    host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
-    if host.include?("greenhouse")
-      m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
-      return m[1].tr("-", " ").capitalize if m
-    elsif host.include?("lever.co")
-      seg = URI.parse(url).path.split("/").reject(&:blank?).first
-      return seg.tr("-", " ").capitalize if seg
+    uri  = URI.parse(url)
+    host = uri.host.to_s.downcase.sub(/^www\./, "")
+    path = uri.path.to_s
+
+    # Greenhouse
+    if host.include?("greenhouse.io")
+      if (m = url.match(%r{boards\.greenhouse\.io/([^/]+)/}i))
+        return humanize_company(m[1])
+      end
+      if (m = url.match(/[\?&]for=([^&]+)/i))
+        return humanize_company(CGI.unescape(m[1].to_s))
+      end
     end
-    host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
+
+    # Lever
+    if host.end_with?("lever.co")
+      seg = path.split("/").reject(&:blank?).first
+      return humanize_company(seg) if seg
+    end
+
+    base = host.split(".")[-2].to_s
+    return base.present? ? humanize_company(base) : "Unknown"
   rescue
     "Unknown"
   end
+
+  # def infer_company_from_url(url)
+  #   host = URI.parse(url).host.to_s.downcase.sub(/^www\./, "")
+  #   if host.include?("greenhouse")
+  #     m = url.match(%r{boards\.greenhouse\.io/([^/]+)/})
+  #     return m[1].tr("-", " ").capitalize if m
+  #   elsif host.include?("lever.co")
+  #     seg = URI.parse(url).path.split("/").reject(&:blank?).first
+  #     return seg.tr("-", " ").capitalize if seg
+  #   end
+  #   host.split(".")[-2].to_s.presence&.capitalize || "Unknown"
+  # rescue
+  #   "Unknown"
+  # end
 
   def stage_label(raw)
     s = raw.to_s.strip.downcase
