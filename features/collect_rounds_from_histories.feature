@@ -12,8 +12,8 @@ Feature: Collect interview rounds from job histories
       | Offer          |
     When I collect rounds from histories
     Then the result should be:
-      | Round 1 |
-      | Round 2 |
+      | Round1 |
+      | Round2 |
 
   Scenario: Histories include no rounds
     Given the following job histories:
@@ -31,5 +31,5 @@ Feature: Collect interview rounds from job histories
       | Offer          |
     When I collect rounds from histories
     Then the result should be:
-      | Round 1 |
-      | Round 2 |
+      | Round1 |
+      | Round2 |

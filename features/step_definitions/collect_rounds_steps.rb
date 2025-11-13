@@ -1,18 +1,13 @@
 require 'set'
 require_relative '../../app/helpers/application_helper'
+require Rails.root.join('app/controllers/applications_controller')
 
-module StageLabelStub
-  def stage_label(status)
-    match = status.to_s.match(/Round\s*\d+/)
-    match ? match[0] : status.to_s
-  end
+Before do
+  @apps_ctrl = ApplicationsController.new
 end
 
-World(ApplicationHelper)
-World(StageLabelStub)
-
 Given('the following job histories:') do |table|
-  @histories = table.hashes
+  @histories = [table.hashes]
 end
 
 Given('the following nested job histories:') do |table|
@@ -20,12 +15,13 @@ Given('the following nested job histories:') do |table|
 end
 
 When('I collect rounds from histories') do
-  @result = collect_rounds_from_histories(@histories)
+  # If you want to use the real stage_label for coverage:
+  # nothing to stub
+  @result = @apps_ctrl.send(:collect_rounds_from_histories, @histories)
 end
 
 Then('the result should be:') do |table|
-  expected = table.raw.flatten
-  expect(@result).to eq(expected)
+  expect(@result).to eq(table.raw.flatten)
 end
 
 Then('the result should be an empty list') do

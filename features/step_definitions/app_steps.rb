@@ -123,5 +123,3 @@ end
 Then("the job application for {string} should not exist") do |company|
   expect(JobApplication.find_by(company: company)).to be_nil
 end
-
-# build_links_from_paths
