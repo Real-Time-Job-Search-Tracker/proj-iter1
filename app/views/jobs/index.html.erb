@@ -1,37 +1,98 @@
 <h1>Dashboard</h1>
 
-<div class="container">
-
-  <div class="card">
-    <div class="panel-header">
-      <h2>Add an application</h2>
+<div class="brand-strip">
+  <div class="brand-strip-inner">
+    <div class="brand-strip-left">
+      <span class="brand-strip-title">Land your dream job</span>
+      <span class="brand-strip-divider"></span>
     </div>
 
-    <%# === Rails-friendly form that tests expect === %>
-    <%= form_with url: applications_path, method: :post, id: "new_application", data: { turbo: false } do %>
-      <div>
-        <%= label_tag "application[url]", "Final apply URL" %>
-        <%= text_field_tag "application[url]", "", id: "application_url", type: "url", placeholder: "Paste a job URL (Lever/Greenhouse/…)" %>
+    <div class="brand-strip-scroller">
+      <div class="logo-slider">
+        <div class="logo-track">
+          <% logos = %w[
+            Google Amazon Meta Microsoft Apple OpenAI Netflix NVIDIA Tesla IBM
+            Oracle Salesforce Adobe Intel Uber Airbnb Spotify LinkedIn ByteDance Huawei
+          ] %>
+
+          <% 2.times do %>
+            <% logos.each do |logo| %>
+              <span class="brand-logo"><%= logo %></span>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card app-add-card">
+    <div class="panel-header">
+      <h2 class="app-form-title">Add an application</h2>
+    </div>
+
+    <%= form_with url: applications_path,
+                  method: :post,
+                  id: "new_application",
+                  data: { turbo: false },
+                  html: { class: "compact-app-form" } do %>
+
+      <!-- Row 1: URL + Status -->
+      <div class="form-row">
+        <div class="flex-8 app-field">
+          <label class="app-label" for="application_url">
+            Final apply URL
+            <span class="app-label-hint">(Paste a job URL)</span>
+          </label>
+          <%= text_field_tag "application[url]",
+                "",
+                id: "application_url",
+                type: "url",
+                placeholder: "Paste a job URL (Lever/Greenhouse/…)",
+                class: "app-input" %>
+        </div>
+
+        <div class="flex-2 app-field">
+          <label class="app-label" for="application_status">Status</label>
+          <%= select_tag "application[status]",
+                options_for_select(
+                  %w[Applied Round1 Round2 Interview Offer Accepted Declined],
+                  "Applied"
+                ),
+                id: "application_status",
+                class: "app-input" %>
+        </div>
       </div>
 
-      <div>
-        <%= label_tag "application[company]", "Company (optional)" %>
-        <%= text_field_tag "application[company]", "", id: "application_company" %>
+      <!-- Row 2: Company + Title + Button -->
+      <div class="app-row">
+        <div class="app-field">
+          <label class="app-label-sm" for="application_company">
+            Company <span class="app-label-hint">(optional)</span>
+          </label>
+          <%= text_field_tag "application[company]",
+                "",
+                id: "application_company",
+                class: "app-input-sm" %>
+        </div>
+
+        <div class="app-field">
+          <label class="app-label-sm" for="application_title">
+            Title <span class="app-label-hint">(optional)</span>
+          </label>
+          <%= text_field_tag "application[title]",
+                "",
+                id: "application_title",
+                class: "app-input-sm" %>
+        </div>
+
+        <div class="app-actions-inline">
+          <%= submit_tag "Add Application", class: "btn small-add" %>
+        </div>
       </div>
 
-      <div>
-        <%= label_tag "application[title]", "Title (optional)" %>
-        <%= text_field_tag "application[title]", "", id: "application_title" %>
-      </div>
-
-      <div>
-        <%= label_tag "application[status]", "Status" %>
-        <%= select_tag "application[status]",
-              options_for_select(%w[Applied Round1 Round2 Interview Offer Accepted Declined], "Applied"),
-              id: "application_status" %>
-      </div>
-
-      <%= submit_tag "Add Application" %>
     <% end %>
 
     <div class="msg" id="msg"></div>
@@ -48,7 +109,6 @@
       <span id="countLabel" class="muted"></span>
     </div>
 
-    <%# === Simple server-rendered list the steps can query === %>
     <ul id="applications" style="display:none;">
       <% JobApplication.order(created_at: :desc).each do |app| %>
         <li data-company="<%= app.company %>">
@@ -58,7 +118,6 @@
       <% end %>
     </ul>
 
-    <%# You can keep your JS-driven table too; tests won’t rely on it %>
     <div class="table-wrap" style="margin-top:1rem">
       <table id="appsTable">
         <thead>

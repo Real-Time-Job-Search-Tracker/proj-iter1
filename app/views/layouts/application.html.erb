@@ -13,35 +13,51 @@
   <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.35.2/plotly.min.js"></script>
-
 </head>
+
 <body class="app">
-  <header class="nav glass">
-    <div class="brand">JobTracker<span class="dot">•</span></div>
-    <nav class="nav-actions">
-      <%= link_to "Overview", root_path %>
-      <% if signed_in? %>
-        <%= button_to "Sign out",
-              sign_out_path,
-              method: :delete,
-              form: { class: "inline-form" },
-              class: "nav-link as-link" %>
-      <% else %>
-        <%= button_to "Sign in",
-              sign_in_path,
-              method: :get,
-              form: { class: "inline-form" },
-              class: "nav-link as-link" %>
-      <% end %>
-    </nav>
-  </header>
+<header class="nav glass">
+  <div class="brand">JobTracker<span class="dot">•</span></div>
 
-  <%= render "layouts/flash" %>
+  <nav class="nav-actions">
+    <!-- bell with badge -->
+    <div class="nav-bell">
+      <button class="nav-icon-btn" type="button">🔔</button>
+      <span class="nav-badge">1</span>
+    </div>
 
-  <main class="container">
-    <%= yield %>
-  </main>
+    <!-- progress pill -->
+    <div class="nav-progress-pill">
+      <span class="nav-progress-icon">📋</span>
+      <span class="nav-progress-text">2/11</span>
+    </div>
 
-  <footer class="footer">© <%= Time.current.year %> JobTracker</footer>
+    <!-- avatar + dropdown -->
+    <div class="nav-avatar">
+      <div class="nav-avatar-circle"></div>
+      <span class="nav-avatar-name">
+        Hi, <%= current_user&.username || "Guest" %>
+      </span>
+    </div>
+
+    <% if signed_in? %>
+      <%= button_to "Sign out",
+            sign_out_path,
+            method: :delete,
+            form: { class: "inline-form" },
+            class: "nav-button" %>
+    <% else %>
+      <%= link_to "Sign in", sign_in_path, class: "nav-link" %>
+    <% end %>
+  </nav>
+</header>
+
+<%= render "layouts/flash" %>
+
+<main class="container">
+  <%= yield %>
+</main>
+
+<footer class="footer">© <%= Time.current.year %> JobTracker</footer>
 </body>
 </html>

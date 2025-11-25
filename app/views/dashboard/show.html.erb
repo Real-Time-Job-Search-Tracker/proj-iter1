@@ -1,2 +1,162 @@
+# <h1>Dashboard</h1>
+# <p>Welcome, <%= current_user&.email %></p>
 <h1>Dashboard</h1>
-<p>Welcome, <%= current_user&.email %></p>
+
+<div class="brand-strip">
+  <div class="brand-strip-inner">
+    <div class="brand-strip-left">
+      <span class="brand-strip-title">Land your dream job</span>
+      <span class="brand-strip-divider"></span>
+    </div>
+
+    <div class="brand-strip-scroller">
+      <div class="logo-slider">
+        <div class="logo-track">
+          <span class="brand-logo">Google</span>
+          <span class="brand-logo">Amazon</span>
+          <span class="brand-logo">Meta</span>
+          <span class="brand-logo">Microsoft</span>
+          <span class="brand-logo">Apple</span>
+          <span class="brand-logo">OpenAI</span>
+          <span class="brand-logo">Netflix</span>
+          <span class="brand-logo">NVIDIA</span>
+          <span class="brand-logo">Tesla</span>
+          <span class="brand-logo">IBM</span>
+          <span class="brand-logo">Oracle</span>
+          <span class="brand-logo">Salesforce</span>
+          <span class="brand-logo">Adobe</span>
+          <span class="brand-logo">Intel</span>
+          <span class="brand-logo">Uber</span>
+          <span class="brand-logo">Airbnb</span>
+          <span class="brand-logo">Spotify</span>
+          <span class="brand-logo">LinkedIn</span>
+          <span class="brand-logo">ByteDance</span>
+          <span class="brand-logo">Huawei</span>
+
+          <span class="brand-logo">Google</span>
+          <span class="brand-logo">Amazon</span>
+          <span class="brand-logo">Meta</span>
+          <span class="brand-logo">Microsoft</span>
+          <span class="brand-logo">Apple</span>
+          <span class="brand-logo">OpenAI</span>
+          <span class="brand-logo">Netflix</span>
+          <span class="brand-logo">NVIDIA</span>
+          <span class="brand-logo">Tesla</span>
+          <span class="brand-logo">IBM</span>
+          <span class="brand-logo">Oracle</span>
+          <span class="brand-logo">Salesforce</span>
+          <span class="brand-logo">Adobe</span>
+          <span class="brand-logo">Intel</span>
+          <span class="brand-logo">Uber</span>
+          <span class="brand-logo">Airbnb</span>
+          <span class="brand-logo">Spotify</span>
+          <span class="brand-logo">LinkedIn</span>
+          <span class="brand-logo">ByteDance</span>
+          <span class="brand-logo">Huawei</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Add Application card -->
+  <div class="card app-add-card">
+    <h2 class="app-form-title">Add an application</h2>
+
+    <%= form_with model: JobApplication.new,
+                  url: applications_path,
+                  method: :post,
+                  local: true,
+                  html: { class: "app-form" } do |f| %>
+
+      <div class="app-field">
+        <label class="app-label">
+          Final apply URL
+          <span class="app-label-hint">(Paste a job URL)</span>
+        </label>
+        <%= f.text_field :url,
+              class: "app-input",
+              placeholder: "Paste a job URL (Lever/Greenhouse/Workday)" %>
+      </div>
+
+      <div class="app-field">
+        <label class="app-label">
+          Company
+          <span class="app-label-hint">(optional)</span>
+        </label>
+        <%= f.text_field :company, class: "app-input" %>
+      </div>
+
+      <div class="app-field">
+        <label class="app-label">
+          Title
+          <span class="app-label-hint">(optional)</span>
+        </label>
+        <%= f.text_field :title, class: "app-input" %>
+      </div>
+
+      <div class="app-field">
+        <label class="app-label">Status</label>
+        <%= f.select :status,
+              ["Applied", "Online Assessment", "Interview", "Offer", "Rejected"],
+              {},
+              class: "app-input" %>
+      </div>
+
+      <div class="app-actions">
+        <%= f.submit "Add Application", class: "btn app-submit" %>
+      </div>
+
+    <% end %>
+  </div>
+
+  <% if signed_in? && @applications.empty? %>
+    <!-- empty state for new users -->
+    <div class="card section">
+      <h2>No applications yet</h2>
+      <p>Paste your first job URL above to start tracking your funnel.</p>
+    </div>
+  <% else %>
+    <!-- Sankey + table for demo users or users with data -->
+    <div class="section card">
+      <h2>Funnel (Sankey)</h2>
+      <div id="sankey"></div>
+    </div>
+
+    <div class="section card">
+      <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 style="margin:0">Applications</h2>
+        <span id="countLabel" class="muted"></span>
+      </div>
+
+      <ul id="applications" style="display:none;">
+        <% @applications.each do |app| %>
+          <li data-company="<%= app.company %>">
+            <span class="company"><%= app.company %></span>
+            <span class="stage"><%= app.status %></span>
+          </li>
+        <% end %>
+      </ul>
+
+      <div class="table-wrap" style="margin-top:1rem">
+        <table id="appsTable">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>URL</th>
+              <th>Status</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  window.FAKE_JOBS = <%= raw(@applications.to_json) %>;
+</script>

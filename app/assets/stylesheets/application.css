@@ -26,7 +26,7 @@ body.app{
     linear-gradient(180deg,var(--bg),var(--bg2));
 }
 
-/* glass nav */
+/* ===== NAV ===== */
 .nav{
   position: sticky; top: 0; z-index: 20;
   display:flex; align-items:center; justify-content:space-between;
@@ -41,24 +41,55 @@ body.app{
 }
 .brand{font-weight:800; letter-spacing:.2px}
 .brand .dot{color:var(--pri)}
-.nav-actions a{color:var(--ink); text-decoration:none; margin-left:14px}
-.nav-actions a:hover{opacity:.8}
 
-.container{max-width:1120px; margin:26px auto; padding:0 18px}
-.card {
-  border-radius: 0;
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-link {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 14px;
+}
+.nav-link:hover{opacity:.8}
+
+.inline-form {
+  display: inline;
+  margin: 0;
+}
+.nav-pill-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
   border: none;
-  box-shadow: none;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.32);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.nav-pill-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.36);
+}
+.nav-pill-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.26);
+}
+.nav-hello {
+  margin-right: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 14px;
 }
 
-.footer{
-  margin-top:40px; padding:28px 18px; text-align:center;
-  color:var(--muted);
-  border-top:1px solid var(--border);
-  background: var(--card);
-}
+/* ===== LAYOUT ===== */
+.container{max-width:1120px; margin:26px auto; padding:0 18px}
 
-/* cards */
 .card{
   background: var(--card);
   border:1px solid var(--border);
@@ -70,7 +101,14 @@ body.app{
 .section h2{font-size:28px; margin:6px 0 14px}
 h1,h2,h3{font-weight:800}
 
-/* form */
+.footer{
+  margin-top:40px; padding:28px 18px; text-align:center;
+  color:var(--muted);
+  border-top:1px solid var(--border);
+  background: var(--card);
+}
+
+/* ===== DASHBOARD QUICK PASTE (old pastebox) ===== */
 .pastebox{display:grid; grid-template-columns:1fr 0.8fr 0.8fr auto; gap:12px}
 .pastebox input{
   height:44px; padding:10px 14px; border-radius:14px;
@@ -81,7 +119,7 @@ select, .select{
   border:1px solid var(--border); background:#fff; color:var(--ink);
 }
 
-/* buttons */
+/* ===== BUTTONS ===== */
 .btn, button{
   appearance:none; border:0; cursor:pointer;
   height:44px; padding:0 16px; border-radius:999px;
@@ -98,14 +136,30 @@ select, .select{
   border:1px solid var(--border); box-shadow:none;
 }
 
-/* table */
+/* small pill button used in nav / inline */
+.small-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg,#4f46e5,#6366f1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(79,70,229,.3);
+  transition: .15s ease;
+}
+.small-btn:hover { transform: translateY(-1px); }
+
+/* ===== TABLE ===== */
 .table-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden}
 table{width:100%; border-collapse:collapse}
 th,td{padding:14px 12px; border-bottom:1px solid var(--border)}
 thead th{background:#fafbff; font-weight:700}
 th:last-child, td:last-child{text-align:right}
 
-/* toast */
+/* ===== TOAST ===== */
 .toast{
   position:fixed; top:50%; left:50%;
   transform:translate(-50%,-50%) scale(.96);
@@ -117,17 +171,426 @@ th:last-child, td:last-child{text-align:right}
 }
 .toast.show{opacity:1; transform:translate(-50%,-50%) scale(1)}
 
-/* plotly holder */
+/* ===== SANKEY HOLDER ===== */
 #sankey{min-height:420px}
 
 /* reveal on scroll */
 .reveal{opacity:0; transform:translateY(12px); transition:opacity .45s ease, transform .45s ease}
 .reveal.show{opacity:1; transform:none}
 
-/* responsive */
+/* generic responsive for pastebox */
 @media (max-width: 860px){
   .pastebox{grid-template-columns:1fr; gap:10px}
 }
 
+/* ======================
+   AUTH (登录 / 注册页面)
+   ====================== */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(1200px 600px at 70% -10%, #e7e6ff 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, #eaf6ff 0%, transparent 60%),
+    linear-gradient(180deg,#f6f5ff,#eef3ff);
+}
+
+.auth-nav {
+  width: 100%;
+  padding: 18px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 16px 48px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 40px 34px 44px;
+  box-shadow: 0 20px 50px rgba(15,23,42,0.14);
+  animation: auth-fade-in 0.45s ease;
+}
+
+.auth-title {
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.auth-subtitle {
+  color: #6b7280;
+  margin-bottom: 28px;
+  font-size: 15px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-field label {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.auth-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  font-size: 15px;
+}
+
+.auth-link-sm {
+  font-size: 13px;
+  text-align: right;
+  display: block;
+  margin-top: -8px;
+}
+
+.auth-button.primary {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg,#4f46e5,#6366f1);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.auth-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(79, 70, 229, 0.35);
+}
+
+.auth-button.google {
+  margin-top: 10px;
+  padding: 12px;
+  width: 100%;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 22px 0 12px;
+  color: #a0a0a0;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 14px;
+}
+.auth-footer a {
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+@keyframes auth-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ======================
+   Brand strip / logo marquee
+   ====================== */
+
+.brand-strip {
+  max-width: 1120px;
+  margin: 32px auto 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+}
+
+.brand-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand-strip-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.brand-strip-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #0f172a;
+}
+
+.brand-strip-divider {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(to bottom, #e5e7eb, #cbd5f5);
+}
+
+.brand-strip-scroller {
+  overflow: hidden;
+  flex: 1;
+}
+
+/* 你现在 HTML 里用的是 logo-slider / logo-track */
+.logo-slider {
+  overflow: hidden;
+}
+.logo-track {
+  display: inline-flex;
+  gap: 32px;
+  white-space: nowrap;
+  animation: brand-scroll 26s linear infinite;
+}
+
+.brand-logo {
+  font-size: 20px;
+  font-weight: 600;
+  color: #9ca3af;
+  opacity: 0.9;
+}
+
+@keyframes brand-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (max-width: 768px) {
+  .brand-strip {
+    border-radius: 18px;
+    padding: 10px 16px;
+  }
+  .brand-strip-inner { gap: 12px; }
+  .brand-strip-title { font-size: 18px; }
+  .brand-logo { font-size: 16px; }
+}
+/* ======================
+   DASHBOARD Add Application Compact Form
+   ====================== */
+
+.app-add-card {
+  max-width: 720px;
+  margin: 24px auto;
+}
+
+.app-form-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 4px 0 24px;
+}
+
+.compact-app-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* row 1: URL + Status (8–2) */
+.form-row {
+  display: flex;
+  gap: 14px;
+}
+
+.flex-8 { flex: 0 0 80%; }
+.flex-2 { flex: 0 0 20%; }
+
+/* shared field styles */
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.app-label-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+
+.app-input {
+  width: 100%;
+  height: 46px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  font-size: 15px;
+  background: #ffffff;
+}
+
+.app-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.5);
+}
+
+/* row 2: company + title + inline button */
+.app-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.app-row .app-field {
+  flex: 1;
+}
+
+.app-label-sm {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.app-input-sm {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.app-input-sm:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.4);
+}
+
+.app-actions-inline {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* smaller submit button */
+.small-add {
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* responsive: stack on mobile */
+@media (max-width: 760px) {
+  .form-row {
+    flex-direction: column;
+  }
+
+  .flex-8,
+  .flex-2 {
+    flex: 1 1 100%;
+  }
+
+  .app-row {
+    flex-direction: column;
+  }
+
+  .app-actions-inline {
+    justify-content: center;
+  }
+
+  .small-add {
+    width: 100%;
+  }
+}
 
 
+.nav-icon-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.nav-bell {
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-progress-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.nav-progress-icon {
+  font-size: 16px;
+}
+
+.nav-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.nav-avatar-name {
+  font-size: 14px;
+  color: #e5e7eb;
+}

@@ -1,22 +1,38 @@
 Rails.application.routes.draw do
+  # ========== AUTH ==========
   get    "/sign_in",  to: "sessions#new",     as: :sign_in
   post   "/sign_in",  to: "sessions#create"
   delete "/sign_out", to: "sessions#destroy", as: :sign_out
 
-  get "/stats", to: "dashboard#stats"
+  get  "/sign_up", to: "users#new",    as: :sign_up
+  post "/sign_up", to: "users#create"
 
-  root "jobs#index"
+  # Root: show sign-in page when not logged in
+  root "sessions#new"
 
-  get "/jobs/inspect", to: "jobs#inspect", as: :inspect_job
+  # ========== DASHBOARD ==========
+  # Dashboard uses the jobs#index page as the main dashboard
+  get "/dashboard",       to: "jobs#index",  as: :dashboard
+  get "/dashboard/stats", to: "dashboard#stats",
+                          as: :stats_dashboard,
+                          defaults: { format: :json }
 
+  # ========== JOBS ==========
+  resources :jobs, only: [:index]
+
+  get "/jobs/preview", to: "jobs#preview",
+                       defaults: { format: :json }
+
+  get "/jobs/inspect", to: "jobs#inspect",
+                       as: :inspect_job
+
+  # ========== SANKEY API ==========
   get "/sankey", to: "sankey#index", as: :sankey_api
 
-  get "/dashboard", to: "dashboard#show", as: :dashboard
-  get "dashboard/stats", to: "dashboard#stats", as: :stats_dashboard, defaults: { format: :json }
+  # ========== APPLICATIONS ==========
+  resources :applications,
+            only: [:index, :create, :update, :destroy, :new, :edit]
 
-  resources :applications, only: [ :index, :create, :update, :destroy, :new, :edit ]
-  get "/applications/stats", to: "applications#stats", defaults: { format: :json }
-
-  resources :jobs, only: [ :index ]
-  get "jobs/preview", to: "jobs#preview", defaults: { format: :json }
+  get "/applications/stats", to: "applications#stats",
+                             defaults: { format: :json }
 end

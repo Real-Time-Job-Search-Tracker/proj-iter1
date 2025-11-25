@@ -1,13 +1,40 @@
-<%= form_with url: sign_in_path, method: :post, id: "login_form", data: { test: "login" }, local: true do %>
-  <div>
-    <%= label_tag :email, "Email" %>
-    <%= email_field_tag :email, nil, id: "login_email", data: { test: "login_email" } %>
+<div class="auth-page">
+
+  <div class="auth-center">
+    <div class="auth-card">
+      <h1 class="auth-title">Sign In</h1>
+      <p class="auth-subtitle">Welcome back! Please enter your details.</p>
+
+      <%= form_with url: sign_in_path, method: :post, local: true, class: "auth-form" do |f| %>
+
+        <div class="auth-field">
+          <label class="auth-label">Email or username</label>
+          <%= f.text_field :email_or_username, class: "auth-input" %>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <%= f.password_field :password, class: "auth-input" %>
+        </div>
+
+        <%= link_to "Forgot password", "#", class: "auth-forgot" %>
+
+        <button class="auth-button primary">🚀 Sign In</button>
+
+      <% end %>
+
+      <div class="auth-divider">OR</div>
+
+      <div class="auth-google">
+        <button class="auth-button google">G Sign in with Google</button>
+      </div>
+
+      <p class="auth-footer-text">
+        Don't have an account?
+        <%= link_to "Sign Up", sign_up_path, class: "auth-link" %>
+      </p>
+
+    </div>
   </div>
 
-  <div>
-    <%= label_tag :password, "Password" %>
-    <%= password_field_tag :password, nil, id: "login_password", data: { test: "login_password" } %>
-  </div>
-
-  <%= submit_tag "Sign in", data: { test: "login_submit" } %>
-<% end %>
+</div>

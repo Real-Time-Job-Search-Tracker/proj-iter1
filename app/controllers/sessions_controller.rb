@@ -1,13 +1,22 @@
 class SessionsController < ApplicationController
-  def new; end
+  def new
+    @user = User.new
+  end
 
   def create
-    user = User.find_by("LOWER(email) = ?", params[:email].to_s.downcase.strip)
-    if user&.authenticate(params[:password])
+    login    = (params[:email_or_username].presence || params[:email]).to_s.strip
+    password = params[:password]
+
+    user =
+      User.find_by(email: login.downcase) ||
+      User.find_by(username: login)
+
+    if user&.authenticate(password)
       session[:user_id] = user.id
-      redirect_to jobs_path, notice: "Signed in"
+      redirect_to dashboard_path
     else
-      flash.now[:alert] = "Invalid email or password"
+      flash.now[:alert] = "Invalid email/username or password"
+      @user = User.new
       render :new, status: :unprocessable_entity
     end
   end

@@ -1,17 +1,49 @@
-<h1>Add Application</h1>
+<div class="card section app-add-card">
+  <h2 class="app-form-title">Add an application</h2>
 
+  <%= form_with model: @application,
+                url: applications_path,
+                method: :post,
+                local: true,
+                html: { class: "app-form" } do |f| %>
 
-<% if flash[:notice] %>
-  <p class="notice"><%= flash[:notice] %></p>
-<% end %>
+    <div class="app-field">
+      <label class="app-label">
+        Final apply URL
+        <span class="app-label-hint">(Paste a job URL)</span>
+      </label>
+      <%= f.text_field :url,
+            class: "app-input",
+            placeholder: "Paste a job URL (Lever/Greenhouse/Workday)" %>
+    </div>
 
-<% if flash[:alert] %>
-  <p class="alert"><%= flash[:alert] %></p>
-<% end %>
+    <div class="app-field">
+      <label class="app-label">
+        Company
+        <span class="app-label-hint">(optional)</span>
+      </label>
+      <%= f.text_field :company, class: "app-input" %>
+    </div>
 
-<%= form_with url: applications_path, method: :post, data: { turbo: false }, local: true do %>
-  <%= label_tag :url, "Final apply URL" %>
-  <%= text_field_tag :url, "", id: "application_url" %>
+    <div class="app-field">
+      <label class="app-label">
+        Title
+        <span class="app-label-hint">(optional)</span>
+      </label>
+      <%= f.text_field :title, class: "app-input" %>
+    </div>
 
-  <%= submit_tag "Add Application" %>
-<% end %>
+    <div class="app-field">
+      <label class="app-label">Status</label>
+      <%= f.select :status,
+            ["Applied", "Online Assessment", "Interview", "Offer", "Rejected"],
+            {},
+            class: "app-input" %>
+    </div>
+
+    <div class="app-actions">
+      <%= f.submit "Add Application", class: "btn app-submit" %>
+    </div>
+
+  <% end %>
+</div>
