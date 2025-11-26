@@ -1,28 +1,24 @@
-# class ApplicationController < ActionController::Base
-#   protect_from_forgery with: :exception
 
-#   private
-
-#   helper_method :signed_in?
-#   def signed_in?
-#     session[:user_id].present?
-#   end
-# end
 
 class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
-  helper_method :signed_in?, :current_user
+  helper_method :current_user, :signed_in?
 
   private
 
   def current_user
-    @current_user ||= User.find_by(id: session[:user_id])
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
   end
 
   def signed_in?
     current_user.present?
   end
-end
 
+  def require_login
+    return if signed_in?
+
+    redirect_to sign_in_path, alert: "Please sign in"
+  end
+end
 

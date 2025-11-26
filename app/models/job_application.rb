@@ -1,9 +1,14 @@
 class JobApplication < ApplicationRecord
   self.table_name = "job_applications"
 
+  # Associations
+  belongs_to :user, optional: true
+
+  # Validations
   validates :url, presence: true, uniqueness: true
   validates :company, :title, presence: true
 
+  # Callbacks
   before_create do
     self.status  ||= "Applied"
     self.history ||= []
@@ -13,7 +18,9 @@ class JobApplication < ApplicationRecord
   def push_status!(new_status)
     update!(
       status: new_status,
-      history: (history || []) + [ { "status" => new_status, "ts" => Time.now.utc.iso8601 } ]
+      history: (history || []) + [
+        { "status" => new_status, "ts" => Time.now.utc.iso8601 }
+      ]
     )
   end
 end
