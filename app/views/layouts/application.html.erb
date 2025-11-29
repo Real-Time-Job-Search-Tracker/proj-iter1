@@ -26,41 +26,51 @@
       <span class="nav-badge">1</span>
     </div>
 
-    <!-- progress pill -->
+    <!-- progress pill (NOT clickable) -->
     <div class="nav-progress-pill">
       <span class="nav-progress-main">
         <span class="nav-progress-icon">📋</span>
-        <span class="nav-count"><%= header_application_count %>/11</span>
+        <span class="nav-count">
+          <%= header_application_count %>/<%= current_user&.daily_goal || 11 %>
+        </span>
       </span>
 
       <div class="nav-tooltip">
         <span class="nav-tooltip-icon">?</span>
         <div class="nav-tooltip-text">
-          Daily application goal: 11. </br>
-          Click to edit.
-
+          Daily application goal: <%= current_user&.daily_goal || 11 %>.<br/>
+          Edit in your profile.
         </div>
       </div>
     </div>
 
-
-
-
-    <!-- avatar + dropdown -->
-    <div class="nav-avatar">
-      <div class="nav-avatar-circle"></div>
-      <span class="nav-avatar-name">
-        Hi, <%= current_user&.username || "Guest" %>
-      </span>
-    </div>
-
     <% if signed_in? %>
+      <%= link_to profile_path, class: "nav-avatar nav-avatar-link" do %>
+        <% if current_user.avatar.attached? %>
+          <%= image_tag current_user.avatar,
+                        class: "nav-avatar-image" %>
+        <% else %>
+          <div class="nav-avatar-circle"></div>
+        <% end %>
+
+        <span class="nav-avatar-name">
+          Hi, <%= current_user.username %>
+        </span>
+      <% end %>
+
       <%= button_to "Sign out",
             sign_out_path,
             method: :delete,
             form: { class: "inline-form" },
             class: "nav-button" %>
     <% else %>
+      <div class="nav-avatar">
+        <div class="nav-avatar-circle"></div>
+        <span class="nav-avatar-name">
+          Hi, Guest
+        </span>
+      </div>
+
       <%= link_to "Sign in", sign_in_path, class: "nav-link" %>
     <% end %>
   </nav>

@@ -2,6 +2,33 @@
 class User < ApplicationRecord
   has_secure_password
 
+  has_one_attached :avatar
+
+  STUDENT_TRACKS = [
+    "Computer Science",
+    "Machine Learning / AI",
+    "Data Science",
+    "Business Analytics",
+    "Finance / Quant",
+    "Electrical Engineering",
+    "Software Engineering Bootcamp",
+    "Product Management",
+    "UI/UX Design",
+    "Other"
+  ].freeze
+
+  JOB_TITLES = [
+    "Software Engineer",
+    "Machine Learning Engineer",
+    "Data Scientist",
+    "Quant Researcher",
+    "Backend Engineer",
+    "Frontend Engineer",
+    "Fullstack Engineer",
+    "Product Manager",
+    "UI/UX Designer",
+    "Other"
+  ].freeze
   # Associations
   has_many :job_applications, dependent: :destroy
 
