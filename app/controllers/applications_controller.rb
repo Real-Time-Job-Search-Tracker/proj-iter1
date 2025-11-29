@@ -1,4 +1,3 @@
-
 require "set"
 require "json"
 require "uri"
@@ -150,7 +149,7 @@ class ApplicationsController < ApplicationController
     paths     = rows.map { |r| canonical_path(r[:history] || r["history"], r[:status] || r["status"]) }
     rounds    = collect_rounds_from_histories(histories)
 
-    nodes = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
+    nodes = [ "Applications", "Applied" ] + rounds + [ "Interview", "Offer", "Accepted", "Declined", "Ghosted" ]
     nodes.uniq!
     links = build_links_from_paths(paths, nodes)
 
@@ -362,7 +361,10 @@ class ApplicationsController < ApplicationController
     if s =~ /\bround\s*(\d+)\b/
       return "Round#{Regexp.last_match(1)}"
     end
-    if s =~ /(interview|screen|assessment|challenge|take[-\s]?home|phone|onsite|oa|online\s*assessment)/
+    if s.include?("interview")
+      return "Interview"
+    end
+    if s =~ /(screen|assessment|challenge|take[-\s]?home|phone|onsite|oa|online\s*assessment)/
       return "Round1"
     end
     return "Offer"    if s.include?("offer")
