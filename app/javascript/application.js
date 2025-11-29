@@ -164,6 +164,17 @@ function enableReveal() {
 }
 
 // ---------- sankey ----------
+const SANKEY_NODE_COLORS = {
+  Applications: "#3b82f6",
+  Applied:      "#4b73eb",
+  Round1:       "#a855f7",
+  Round2:       "#de13d7",
+  Interview:    "#f97316",
+  Offer:        "#f6cc0fff",
+  Accepted:     "#1dd360ff",
+  Declined:     "#e51818ff",
+  Ghosted:      "#6b7280",
+};
 async function loadSankey() {
   try {
     const el = document.getElementById("sankey");
@@ -194,7 +205,9 @@ async function loadSankey() {
       return;
     }
 
-    const nodeColors = ["#6f8cfb","#87d4a6","#b59dff","#9aa5b1","#7e8792","#a98e86"].slice(0, nodes.length);
+    const nodeColors = nodes.map(
+      (name) => SANKEY_NODE_COLORS[name] || "#9ca3af"
+    );
 
     const plotData = [{
       type: "sankey",
