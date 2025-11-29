@@ -1,11 +1,12 @@
 class SankeyController < ApplicationController
   def index
-    render json: {
-      nodes: [ "Applied", "Interviewing", "Offer" ],
-      links: [
-        { source: "Applied", target: "Interviewing", value: 2 },
-        { source: "Interviewing", target: "Offer", value: 1 }
-      ]
-    }
+    apps =
+      if current_user
+        current_user.job_applications.order(created_at: :desc)
+      else
+        JobApplication.none
+      end
+
+    render json: Sankey::Builder.call(apps)
   end
 end

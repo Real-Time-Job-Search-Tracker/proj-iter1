@@ -136,7 +136,10 @@
 
   function reloadApplications() {
     fetch("/applications.json", { headers: { "Accept": "application/json" } })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw r;
+        return r.json();
+      })
       .then((rows) => {
         renderApplications(rows);
       })
@@ -242,20 +245,22 @@
       },
       body: JSON.stringify({ status })
     })
-      .then((r) => r.ok ? r.json() : Promise.reject(r))
-      .then(() => reloadApplications())
+      .then((r) => {
+        if (!r.ok && r.status !== 204) throw r;
+        window.location.reload();
+      })
       .catch((e) => console.error("Status update failed", e));
   }
 
   function deleteApplication(id) {
-    if (!id) return;
+    if (!id) return
     fetch(`/applications/${id}`, {
       method: "DELETE",
       headers: { "Accept": "application/json" }
     })
       .then((r) => {
-        if (!r.ok && r.status !== 204) return Promise.reject(r);
-        reloadApplications();
+        if (!r.ok && r.status !== 204) throw r;
+        window.location.reload();
       })
       .catch((e) => console.error("Delete failed", e));
   }
