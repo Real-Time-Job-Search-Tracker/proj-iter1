@@ -8,10 +8,8 @@ class DashboardController < ApplicationController
     else
     
       @demo_mode   = true
-      session[:guest_apps] = []  
-      @apps        = []      
+      session[:guest_apps] = []
+      @apps        = []
+    end
   end
-
 end
-
-
