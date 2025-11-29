@@ -1,4 +1,18 @@
-<% flash.each do |type, message| %>
-  <% next if message.blank? %>
-  <div class="flash <%= type %>"><%= message %></div>
+# <% flash.each do |type, message| %>
+#   <% next if message.blank? %>
+#   <div class="flash <%= type %>"><%= message %></div>
+# <% end %>
+
+
+<% if flash.any? %>
+  <div class="flash-stack">
+    <% flash.each do |type, message| %>
+      <% next if message.blank? %>
+      <div class="flash-banner
+                  <%= 'flash-error'   if type.to_sym == :alert  %>
+                  <%= 'flash-success' if type.to_sym == :notice %>">
+        <span><%= message %></span>
+      </div>
+    <% end %>
+  </div>
 <% end %>

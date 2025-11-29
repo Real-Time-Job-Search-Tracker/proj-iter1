@@ -1,4 +1,3 @@
-
 require "set"
 require "json"
 require "uri"
@@ -8,19 +7,44 @@ class ApplicationsController < ApplicationController
   skip_forgery_protection only: %i[create update destroy stats]
 
   GHOST_DAYS = (ENV["GHOST_DAYS"] || "21").to_i
+
   def index
     if signed_in?
       apps = current_user.job_applications.order(created_at: :desc)
 
       rows =
         if apps.exists?
-          apps.as_json(only: %i[id url company title status])
+          apps.as_json(only: %i[id url company title status applied_on created_at])
         else
           []
         end
     else
+      base  = load_fake_jobs
       extra = (session[:guest_apps] || [])
-      rows  = base + extra.map { |h| h.slice("id", "url", "company", "title", "status") }
+
+      base_rows = base.map do |h|
+        {
+          "id"         => h["id"] || h[:id],
+          "url"        => h["url"] || h[:url],
+          "company"    => h["company"] || h[:company],
+          "title"      => h["title"] || h[:title],
+          "status"     => h["status"] || h[:status],
+          "applied_on" => (h["applied_on"] || Date.today).to_s,
+        }
+      end
+
+      extra_rows = extra.map do |h|
+        {
+          "id"         => h["id"] || h[:id],
+          "url"        => h["url"] || h[:url],
+          "company"    => h["company"] || h[:company],
+          "title"      => h["title"] || h[:title],
+          "status"     => h["status"] || h[:status],
+          "applied_on" => (h["applied_on"] || h[:applied_on] || Date.today).to_s,
+        }
+      end
+
+      rows = base_rows + extra_rows
     end
 
     render json: rows
@@ -54,13 +78,14 @@ class ApplicationsController < ApplicationController
   def create
     Rails.logger.debug("Create params: #{params.inspect}")
 
-    # Extract & normalize params
-    url     = (params[:url].presence || params.dig(:application, :url)).to_s.strip
-    company = (params[:company].presence || params.dig(:application, :company)).to_s.strip
-    title   = (params[:title].presence || params.dig(:application, :title)).to_s.strip
-    status  = (params[:status].presence || params.dig(:application, :status)).presence || "Applied"
+    url        = (params[:url].presence        || params.dig(:application, :url)).to_s.strip
+    company    = (params[:company].presence    || params.dig(:application, :company)).to_s.strip
+    title      = (params[:title].presence      || params.dig(:application, :title)).to_s.strip
+    status     = (params[:status].presence     || params.dig(:application, :status)).presence || "Applied"
+    applied_on = (params[:applied_on].presence || params.dig(:application, :applied_on)).presence
 
-    # Basic URL validation
+    applied_on = Date.parse(applied_on) rescue nil
+
     unless url.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
       respond_to do |format|
         format.html do
@@ -74,7 +99,6 @@ class ApplicationsController < ApplicationController
       return
     end
 
-    # Try to scrape company/title if missing
     if (company.blank? || title.blank?) && url !~ /(greenhouse\.io|lever\.co)/i
       parsed  = parse_job_page(url)
       company = parsed[:company] if company.blank? && parsed[:company].present?
@@ -84,14 +108,14 @@ class ApplicationsController < ApplicationController
     company = company.presence || infer_company_from_url(url)
     title   = title.presence   || "(unknown title)"
 
-    # ----------------- SIGNED-IN USER -----------------
     if signed_in? && current_user
       app = JobApplication.new(
-        url:     url,
-        company: company,
-        title:   title,
-        status:  status,
-        user:    current_user
+        url:        url,
+        company:    company,
+        title:      title,
+        status:     status,
+        user:       current_user,
+        applied_on: applied_on
       )
 
       if app.save
@@ -99,7 +123,7 @@ class ApplicationsController < ApplicationController
 
         respond_to do |fmt|
           fmt.html { redirect_to dashboard_path, notice: "Application added" }
-          fmt.json { render json: app.slice(:id, :url, :company, :title, :status), status: :created }
+          fmt.json { render json: app.slice(:id, :url, :company, :title, :status, :applied_on), status: :created }
         end
       else
         msg = app.errors.full_messages.to_sentence
@@ -108,10 +132,7 @@ class ApplicationsController < ApplicationController
           fmt.json { render json: { error: msg }, status: :unprocessable_entity }
         end
       end
-
-    # ----------------- GUEST MODE -----------------
     else
-      # Session-only demo data; nothing is persisted
       session[:guest_apps] ||= []
 
       new_id = load_fake_jobs.size + session[:guest_apps].size + 1
@@ -121,12 +142,13 @@ class ApplicationsController < ApplicationController
       ]
 
       app_hash = {
-        "id"      => new_id,
-        "url"     => url,
-        "company" => company,
-        "title"   => title,
-        "status"  => status,
-        "history" => history
+        "id"         => new_id,
+        "url"        => url,
+        "company"    => company,
+        "title"      => title,
+        "status"     => status,
+        "history"    => history,
+        "applied_on" => (applied_on || Date.today)
       }
 
       session[:guest_apps] << app_hash
@@ -137,13 +159,12 @@ class ApplicationsController < ApplicationController
           redirect_to dashboard_path
         end
         fmt.json do
-          render json: app_hash.slice("id", "url", "company", "title", "status"),
-                status: :created
+          render json: app_hash.slice("id", "url", "company", "title", "status", "applied_on"),
+                 status: :created
         end
       end
     end
   end
-
 
   def build_sankey_from_rows(rows)
     histories = rows.map { |r| r[:history] || r["history"] }
@@ -157,7 +178,6 @@ class ApplicationsController < ApplicationController
     { nodes: nodes, links: links }
   end
 
-
   def update
     if signed_in?
       app = current_user.job_applications.find_by(id: params[:id])
@@ -165,15 +185,20 @@ class ApplicationsController < ApplicationController
 
       if params[:status].present? && app.respond_to?(:push_status!)
         app.push_status!(params[:status])
-        return render json: app.as_json(only: %i[id url company title status])
+        return render json: app.as_json(only: %i[id url company title status applied_on])
       end
 
-      if app.update(params.permit(:company, :title, :url, :status))
-        render json: app.as_json(only: %i[id url company title status])
+      applied_on = (params[:applied_on].presence || params.dig(:application, :applied_on)).presence
+      applied_on = Date.parse(applied_on) rescue nil
+
+      attrs = params.permit(:company, :title, :url, :status).to_h
+      attrs[:applied_on] = applied_on if applied_on
+
+      if app.update(attrs)
+        render json: app.as_json(only: %i[id url company title status applied_on])
       else
         render json: { error: app.errors.full_messages.join(", ") }, status: 422
       end
-
     else
       guest_apps = session[:guest_apps] || []
       app = guest_apps.find { |h| h["id"].to_s == params[:id].to_s }
@@ -183,12 +208,15 @@ class ApplicationsController < ApplicationController
         app["status"] = params[:status]
         (app["history"] ||= []) << { "status" => params[:status], "ts" => Time.now.utc.iso8601 }
       else
-        app["company"] = params[:company] if params[:company]
-        app["title"]   = params[:title]   if params[:title]
-        app["url"]     = params[:url]     if params[:url]
+        app["company"]    = params[:company]    if params[:company]
+        app["title"]      = params[:title]      if params[:title]
+        app["url"]        = params[:url]        if params[:url]
+        if params[:applied_on].present?
+          app["applied_on"] = params[:applied_on]
+        end
       end
 
-      render json: app.slice("id", "url", "company", "title", "status")
+      render json: app.slice("id", "url", "company", "title", "status", "applied_on")
     end
   end
 
@@ -204,21 +232,18 @@ class ApplicationsController < ApplicationController
     head :no_content
   end
 
-
   private
-
 
   def parse_job_page(url)
     require "httparty"
     require "nokogiri"
 
-    
     headers = {
       "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    response = HTTParty.get(url, headers: headers, timeout: 5) 
-    return {} unless response.success? 
+    response = HTTParty.get(url, headers: headers, timeout: 5)
+    return {} unless response.success?
 
     page = Nokogiri::HTML(response.body)
 
@@ -227,10 +252,9 @@ class ApplicationsController < ApplicationController
               page.at_css(".company-name")&.text&.strip
 
     title = page.at_css("meta[property='og:title']")&.[]("content") ||
-            page.at_css("title")&.text&.strip || 
+            page.at_css("title")&.text&.strip ||
             page.at_css(".job-title")&.text&.strip
 
-   
     title = title.split("|").first.strip if title
 
     { company: company, title: title }
@@ -254,16 +278,18 @@ class ApplicationsController < ApplicationController
 
     arr.each_with_index.map do |x, i|
       h = x.is_a?(Hash) ? x : {}
-      url     = (h["url"] || h[:url]).to_s
-      company = (h["company"] || h[:company]).to_s
-      title   = (h["title"] || h[:title]).to_s
-      status  = (h["status"] || h[:status]).to_s.presence || "Applied"
+      url      = (h["url"] || h[:url]).to_s
+      company  = (h["company"] || h[:company]).to_s
+      title    = (h["title"] || h[:title]).to_s
+      status   = (h["status"] || h[:status]).to_s.presence || "Applied"
       hist_raw = (h["history"] || h[:history])
 
       history = Array(hist_raw).map do |e|
         if e.is_a?(Hash)
-          { "status" => (e["status"] || e[:status] || e["s"] || e[:s]).to_s,
-            "ts"     => (e["ts"] || e[:ts] || e["t"] || e[:t] || Time.now.utc.iso8601).to_s }
+          {
+            "status" => (e["status"] || e[:status] || e["s"] || e[:s]).to_s,
+            "ts"     => (e["ts"] || e[:ts] || e["t"] || e[:t] || Time.now.utc.iso8601).to_s
+          }
         else
           { "status" => e.to_s, "ts" => Time.now.utc.iso8601 }
         end
@@ -272,7 +298,15 @@ class ApplicationsController < ApplicationController
       company = company.presence || infer_company_from_url(url)
       title   = title.presence   || "(unknown title)"
 
-      { id: i + 1, url: url, company: company, title: title, status: status, history: history }
+      {
+        "id"         => i + 1,
+        "url"        => url,
+        "company"    => company,
+        "title"      => title,
+        "status"     => status,
+        "history"    => history,
+        "applied_on" => Date.today.to_s,
+      }
     end
   end
 

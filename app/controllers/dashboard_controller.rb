@@ -10,6 +10,7 @@ class DashboardController < ApplicationController
       @demo_mode   = true
       session[:guest_apps] = []  
       @apps        = []      
+    end
   end
 
 end

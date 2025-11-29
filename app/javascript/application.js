@@ -9,6 +9,11 @@ const byId = (id) => document.getElementById(id);
 const meta = (name) =>
   document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") || "";
 
+// 全局状态：只用来做筛选
+let ALL_APPS = [];
+let statusFilter = "all";
+let monthFilter = "all";
+
 // ---------- create: submit with status ----------
 async function hookForm() {
   const form = document.querySelector("#pasteForm");
@@ -69,22 +74,90 @@ async function hookForm() {
   });
 }
 
-// ---------- index table ----------
+// ---------- toolbar (filters + bulk delete) ----------
+function bindToolbar() {
+  // 兼容两种 id：filterStatus / statusFilter
+  const statusSel = byId("filterStatus") || byId("statusFilter");
+  if (statusSel && !statusSel._bound) {
+    statusSel._bound = true;
+    statusSel.addEventListener("change", () => {
+      statusFilter = statusSel.value || "all";
+      renderFilteredApps();
+    });
+  }
+
+  const monthSel = byId("filterMonth") || byId("monthFilter");
+  if (monthSel && !monthSel._bound) {
+    monthSel._bound = true;
+    monthSel.addEventListener("change", () => {
+      monthFilter = monthSel.value || "all";
+      renderFilteredApps();
+    });
+  }
+
+  // bulk delete：不再依赖 manageMode / selectedIds
+  const bulkDeleteBtn = byId("bulkDeleteBtn");
+  if (bulkDeleteBtn && !bulkDeleteBtn._bound) {
+    bulkDeleteBtn._bound = true;
+    bulkDeleteBtn.addEventListener("click", handleBulkDelete);
+  }
+}
+
+// 直接从 DOM 里找选中的 checkbox 来删
+async function handleBulkDelete() {
+  const checkboxes = document.querySelectorAll(
+    'input.row-check[type="checkbox"]:checked'
+  );
+  if (!checkboxes.length) {
+    alert("No applications selected");
+    return;
+  }
+
+  const ids = Array.from(checkboxes)
+    .map((cb) => cb.dataset.id)
+    .filter(Boolean);
+
+  const ok = window.confirm(
+    ids.length === 1
+      ? "Delete this application?"
+      : `Delete ${ids.length} selected applications?`
+  );
+  if (!ok) return;
+
+  await Promise.all(
+    ids.map((id) =>
+      fetch(`/applications/${id}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "X-CSRF-Token": meta("csrf-token"),
+        },
+      }).catch((e) => console.error("delete failed for id", id, e))
+    )
+  );
+
+  await loadApps();
+  await loadSankey();
+}
+
+// ---------- index table: data + filters + rendering ----------
 async function loadApps() {
-  const tbody = $("#appsTable tbody");
-  const count = byId("countLabel");
+  const tbody = byId("apps-body") || $("#appsTable tbody");
   if (!tbody) return;
 
-  if (!tbody._boundClick) {
-    tbody._boundClick = true;
-    tbody.addEventListener("click", async (e) => {
-      const btn = e.target.closest("button[data-id]");
-      if (!btn) return;
+  if (!tbody._boundHandlers) {
+    tbody._boundHandlers = true;
 
-      btn.disabled = true;
+    // status 下拉更新
+    tbody.addEventListener("change", async (e) => {
+      const sel = e.target.closest("select.status-select");
+      if (!sel) return;
+
+      const id = sel.dataset.id;
+      const status = sel.value;
+      if (!id || !status) return;
+
       try {
-        const id = btn.dataset.id;
-        const status = btn.dataset.next;
         await fetch(`/applications/${id}`, {
           method: "PATCH",
           headers: {
@@ -97,9 +170,7 @@ async function loadApps() {
         await loadApps();
         await loadSankey();
       } catch (err) {
-        console.error("[loadApps] update failed:", err);
-      } finally {
-        btn.disabled = false;
+        console.error("[status update] failed:", err);
       }
     });
   }
@@ -108,39 +179,157 @@ async function loadApps() {
     const dataRaw = await getJSON("/applications", {
       headers: { Accept: "application/json" },
     });
+    ALL_APPS = Array.isArray(dataRaw)
+      ? dataRaw
+      : dataRaw?.applications ?? [];
 
-    const apps = Array.isArray(dataRaw) ? dataRaw : (dataRaw?.applications ?? []);
-
-    tbody.innerHTML = "";
-
-    if (!apps.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="4" class="muted">No applications yet</td></tr>';
-      if (count) count.textContent = "0 items";
-      return;
-    }
-
-    for (const row of apps) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.company ?? ""}</td>
-        <td><a href="${row.url}" target="_blank" rel="noopener noreferrer">${row.url}</a></td>
-        <td>${row.status ?? ""}</td>
-        <td style="text-align:right;">
-          <button class="btn" data-id="${row.id}" data-next="Interview">Mark Interview</button>
-          <button class="btn" data-id="${row.id}" data-next="Offer">Mark Offer</button>
-          <button class="btn" data-id="${row.id}" data-next="Accepted">Accept</button>
-          <button class="btn" data-id="${row.id}" data-next="Declined">Decline</button>
-        </td>`;
-      tbody.appendChild(tr);
-    }
-    if (count) count.textContent = `${apps.length} items`;
+    populateMonthFilter(ALL_APPS);
+    renderFilteredApps();
   } catch (err) {
     console.error("[loadApps] failed:", err);
-    tbody.innerHTML =
-      '<tr><td colspan="4" class="muted">Failed to load applications</td></tr>';
+    const count = byId("countLabel");
     if (count) count.textContent = "";
+    tbody.innerHTML =
+      '<tr><td colspan="6" class="muted">Failed to load applications</td></tr>';
   }
+}
+
+function populateMonthFilter(rows) {
+  const monthSel = byId("filterMonth") || byId("monthFilter");
+  if (!monthSel) return;
+
+  const prevValue = monthSel.value || "all";
+  const months = new Set();
+
+  rows.forEach((app) => {
+    const d = app.applied_on || (app.created_at && app.created_at.slice(0, 10));
+    if (!d) return;
+    months.add(d.slice(0, 7)); // YYYY-MM
+  });
+
+  const sorted = Array.from(months).sort();
+
+  monthSel.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "all";
+  optAll.textContent = "All months";
+  monthSel.appendChild(optAll);
+
+  sorted.forEach((m) => {
+    const o = document.createElement("option");
+    o.value = m;
+    o.textContent = m;
+    monthSel.appendChild(o);
+  });
+
+  if (prevValue !== "all" && sorted.includes(prevValue)) {
+    monthSel.value = prevValue;
+    monthFilter = prevValue;
+  } else {
+    monthSel.value = "all";
+    monthFilter = "all";
+  }
+}
+
+function getFilteredApps() {
+  return ALL_APPS.filter((app) => {
+    const status = app.status || "Applied";
+    const statusOk =
+      statusFilter === "all" ||
+      status.toLowerCase() === statusFilter.toLowerCase();
+
+    const d = app.applied_on || (app.created_at && app.created_at.slice(0, 10));
+    const ym = d ? d.slice(0, 7) : null;
+    const monthOk = monthFilter === "all" || ym === monthFilter;
+
+    return statusOk && monthOk;
+  });
+}
+
+function renderFilteredApps() {
+  const tbody = byId("apps-body") || $("#appsTable tbody");
+  const count = byId("countLabel");
+  if (!tbody) return;
+
+  const apps = getFilteredApps();
+  tbody.innerHTML = "";
+
+  if (!apps.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" class="muted">No applications yet</td></tr>';
+    if (count) count.textContent = "0 items";
+    return;
+  }
+
+  apps.forEach((row) => {
+    const appliedOn =
+      row.applied_on || (row.created_at ? row.created_at.slice(0, 10) : "");
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <input
+          type="checkbox"
+          class="row-check"
+          data-id="${row.id}"
+        />
+      </td>
+      <td>${row.company ?? ""}</td>
+      <td>${appliedOn || "—"}</td>
+      <td>
+        ${
+          row.url
+            ? `<a href="${row.url}" target="_blank" rel="noopener noreferrer" class="table-link-btn">View job</a>`
+            : "—"
+        }
+      </td>
+      <td>
+        <span class="status-pill ${statusClass(row.status || "Applied")}">
+          ${row.status || "Applied"}
+        </span>
+      </td>
+      <td style="text-align:right;">
+        ${buildStatusSelectHTML(row.id, row.status || "Applied")}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (count) {
+    const n = apps.length;
+    count.textContent = n === 1 ? "1 item" : `${n} items`;
+  }
+}
+
+function statusClass(status) {
+  const s = (status || "").toLowerCase();
+  if (s.includes("offer")) return "status-offer";
+  if (s.includes("declin") || s.includes("reject")) return "status-declined";
+  if (s.includes("ghost")) return "status-ghosted";
+  if (s.includes("interview") || s.startsWith("round")) return "status-interview";
+  if (s.includes("accept")) return "status-accepted";
+  return "status-applied";
+}
+
+function buildStatusSelectHTML(id, current) {
+  const options = [
+    "Applied",
+    "Round1",
+    "Round2",
+    "Interview",
+    "Offer",
+    "Accepted",
+    "Declined",
+    "Ghosted",
+  ];
+  const optsHTML = options
+    .map((opt) => {
+      const selected =
+        (current || "").toLowerCase() === opt.toLowerCase() ? "selected" : "";
+      return `<option value="${opt}" ${selected}>${opt}</option>`;
+    })
+    .join("");
+  return `<select class="status-select" data-id="${id}">${optsHTML}</select>`;
 }
 
 // ---------- reveal ----------
@@ -176,8 +365,14 @@ async function loadSankey() {
     const data = await res.json();
 
     if (Array.isArray(data.links)) {
-      const src = [], tgt = [], val = [];
-      data.links.forEach((l) => { src.push(l.source); tgt.push(l.target); val.push(l.value); });
+      const src = [],
+        tgt = [],
+        val = [];
+      data.links.forEach((l) => {
+        src.push(l.source);
+        tgt.push(l.target);
+        val.push(l.value);
+      });
       data.links = { source: src, target: tgt, value: val };
     }
 
@@ -185,7 +380,7 @@ async function loadSankey() {
     const links = data.links || {};
     const src = links.source || [];
     const tgt = links.target || [];
-    const val = links.value  || [];
+    const val = links.value || [];
 
     const total = val.reduce((a, b) => a + (+b || 0), 0);
     if (!nodes.length || !src.length || !tgt.length || !val.length || total === 0) {
@@ -194,21 +389,47 @@ async function loadSankey() {
       return;
     }
 
-    const nodeColors = ["#6f8cfb","#87d4a6","#b59dff","#9aa5b1","#7e8792","#a98e86"].slice(0, nodes.length);
+    const nodeColors = [
+      "#6f8cfb",
+      "#87d4a6",
+      "#b59dff",
+      "#9aa5b1",
+      "#7e8792",
+      "#a98e86",
+    ].slice(0, nodes.length);
 
-    const plotData = [{
-      type: "sankey",
-      orientation: "h",
-      arrangement: "snap",
-      node: { label: nodes, color: nodeColors, pad: 18, thickness: 18, line: { color: "rgba(230,232,236,0.7)", width: 1 } },
-      link: { source: src, target: tgt, value: val, color: "rgba(30,30,40,0.18)", hovertemplate: "%{value} flow(s)<extra></extra>" },
-    }];
+    const plotData = [
+      {
+        type: "sankey",
+        orientation: "h",
+        arrangement: "snap",
+        node: {
+          label: nodes,
+          color: nodeColors,
+          pad: 18,
+          thickness: 18,
+          line: { color: "rgba(230,232,236,0.7)", width: 1 },
+        },
+        link: {
+          source: src,
+          target: tgt,
+          value: val,
+          color: "rgba(30,30,40,0.18)",
+          hovertemplate: "%{value} flow(s)<extra></extra>",
+        },
+      },
+    ];
 
     const layout = {
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       margin: { l: 12, r: 12, t: 10, b: 10 },
-      font: { family: "Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial", size: 13, color: "#12141a" },
+      font: {
+        family:
+          "Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
+        size: 13,
+        color: "#12141a",
+      },
       height: 420,
     };
 
@@ -235,15 +456,14 @@ async function loadSankey() {
 // ---------- boot ----------
 function boot() {
   hookForm();
+  bindToolbar();
   loadApps();
   loadSankey();
   enableReveal();
 }
 
-// Bind once per navigation/render; idempotent functions prevent duplication
 document.addEventListener("turbo:load", boot);
 document.addEventListener("turbo:render", boot);
 document.addEventListener("DOMContentLoaded", boot);
 
-// expose for debugging if you like
 Object.assign(window, { loadApps, loadSankey, boot });

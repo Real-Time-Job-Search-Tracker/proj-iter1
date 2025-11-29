@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_194102) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_27_205851) do
   create_table "job_applications", force: :cascade do |t|
+    t.date "applied_on"
     t.string "company", null: false
     t.datetime "created_at", null: false
     t.json "history", default: [], null: false
