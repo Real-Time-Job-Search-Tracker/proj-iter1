@@ -150,7 +150,7 @@ class ApplicationsController < ApplicationController
     paths     = rows.map { |r| canonical_path(r[:history] || r["history"], r[:status] || r["status"]) }
     rounds    = collect_rounds_from_histories(histories)
 
-    nodes = ["Applications", "Applied"] + rounds + ["Offer", "Accepted", "Declined", "Ghosted"]
+    nodes = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
     nodes.uniq!
     links = build_links_from_paths(paths, nodes)
 
@@ -212,13 +212,13 @@ class ApplicationsController < ApplicationController
     require "httparty"
     require "nokogiri"
 
-    
+
     headers = {
       "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    response = HTTParty.get(url, headers: headers, timeout: 5) 
-    return {} unless response.success? 
+    response = HTTParty.get(url, headers: headers, timeout: 5)
+    return {} unless response.success?
 
     page = Nokogiri::HTML(response.body)
 
@@ -227,10 +227,10 @@ class ApplicationsController < ApplicationController
               page.at_css(".company-name")&.text&.strip
 
     title = page.at_css("meta[property='og:title']")&.[]("content") ||
-            page.at_css("title")&.text&.strip || 
+            page.at_css("title")&.text&.strip ||
             page.at_css(".job-title")&.text&.strip
 
-   
+
     title = title.split("|").first.strip if title
 
     { company: company, title: title }
@@ -295,7 +295,7 @@ class ApplicationsController < ApplicationController
     add = ->(u, v, cls) do
       su, sv = idx[u], idx[v]
       return unless su && sv
-      key = [su, sv]
+      key = [ su, sv ]
       counts[key]  += 1
       classes[key]  = cls
     end
@@ -318,7 +318,7 @@ class ApplicationsController < ApplicationController
     end
 
     counts.map do |(source_idx, target_idx), w|
-      { source: source_idx, target: target_idx, value: w, cls: classes[[source_idx, target_idx]] }
+      { source: source_idx, target: target_idx, value: w, cls: classes[[ source_idx, target_idx ]] }
     end
   end
 
@@ -328,7 +328,7 @@ class ApplicationsController < ApplicationController
     return s if parts.empty?
     first = parts.first.capitalize
     rest  = parts.drop(1).map(&:downcase)
-    ([first] + rest).join(" ")
+    ([ first ] + rest).join(" ")
   end
 
   def infer_company_from_url(url)

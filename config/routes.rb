@@ -17,7 +17,7 @@ Rails.application.routes.draw do
                           defaults: { format: :json }
 
   # JOBS
-  resources :jobs, only: [:index]
+  resources :jobs, only: [ :index ]
   get "/jobs/preview", to: "jobs#preview", defaults: { format: :json }
   get "/jobs/inspect", to: "jobs#inspect", as: :inspect_job
 
@@ -25,6 +25,6 @@ Rails.application.routes.draw do
   get "/sankey", to: "sankey#index", as: :sankey_api
 
   # APPLICATIONS
-  resources :applications, only: [:index, :create, :update, :destroy, :new, :edit]
+  resources :applications, only: [ :index, :create, :update, :destroy, :new, :edit ]
   get "/applications/stats", to: "applications#stats", defaults: { format: :json }
 end
