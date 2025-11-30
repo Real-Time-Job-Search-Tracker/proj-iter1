@@ -17,7 +17,9 @@
 
 <body class="app">
 <header class="nav glass">
-  <div class="brand">JobTracker<span class="dot">•</span></div>
+  <%= link_to root_path, class: "brand", style: "text-decoration:none; color:inherit;" do %>
+    JobTracker<span class="dot">•</span>
+  <% end %>
 
   <nav class="nav-actions">
     <!-- bell with badge -->
