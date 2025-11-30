@@ -4,5 +4,6 @@ class AddProfileFieldsToUsers < ActiveRecord::Migration[8.1]
     add_column :users, :student_track, :string
     add_column :users, :default_job_title, :string
     add_column :users, :custom_job_title, :string
+    add_column :users, :name, :string
   end
 end

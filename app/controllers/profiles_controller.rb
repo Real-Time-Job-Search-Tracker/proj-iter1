@@ -42,6 +42,7 @@ class ProfilesController < ApplicationController
 
   def profile_params
     params.require(:user).permit(
+      :name,
       :daily_goal,
       :student_track,
       :default_job_title,
