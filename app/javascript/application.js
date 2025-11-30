@@ -1,404 +1,6 @@
-// ---------- utils ----------
-async function getJSON(url, opts = {}) {
-  const res = await fetch(url, opts);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json();
-}
-const $ = (sel) => document.querySelector(sel);
+// ---------- small helpers ----------
 const byId = (id) => document.getElementById(id);
-const meta = (name) =>
-  document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") || "";
 
-let ALL_APPS = [];
-let statusFilter = "all";
-let monthFilter = "all";
-
-// ---------- create: submit with status ----------
-async function hookForm() {
-  const form = document.querySelector("#pasteForm");
-  if (!form) return;
-  if (form._boundSubmit) return;
-  form._boundSubmit = true;
-
-  const urlI = byId("jobUrl");
-  const coI = byId("jobCompany");
-  const tiI = byId("jobTitle");
-  const stI = byId("jobStatus");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const submitBtn = form.querySelector('[type="submit"]');
-    const url = (urlI?.value || "").trim();
-    if (!url) return;
-
-    const payload = { url };
-    if (coI && coI.value.trim()) payload.company = coI.value.trim();
-    if (tiI && tiI.value.trim()) payload.title = tiI.value.trim();
-    if (stI && stI.value) payload.status = stI.value;
-
-    try {
-      if (submitBtn) submitBtn.disabled = true;
-
-      const res = await fetch("/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-CSRF-Token": meta("csrf-token"),
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        console.error("POST /applications failed:", res.status, txt);
-        alert(`POST /applications failed: ${res.status}`);
-        return;
-      }
-
-      await loadApps();
-      await loadSankey();
-
-      if (urlI) urlI.value = "";
-      if (coI) coI.value = "";
-      if (tiI) tiI.value = "";
-      if (stI) stI.value = "Applied";
-    } catch (err) {
-      console.error("[hookForm] submit failed:", err);
-      alert("Submit failed, see console");
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-    }
-  });
-}
-
-// ---------- toolbar (filters + bulk delete) ----------
-function bindToolbar() {
-  const statusSel = byId("filterStatus") || byId("statusFilter");
-  if (statusSel && !statusSel._bound) {
-    statusSel._bound = true;
-    statusSel.addEventListener("change", () => {
-      statusFilter = statusSel.value || "all";
-      renderFilteredApps();
-    });
-  }
-
-  const monthSel = byId("filterMonth") || byId("monthFilter");
-  if (monthSel && !monthSel._bound) {
-    monthSel._bound = true;
-    monthSel.addEventListener("change", () => {
-      monthFilter = monthSel.value || "all";
-      renderFilteredApps();
-    });
-  }
-
-  const bulkDeleteBtn = byId("bulkDeleteBtn");
-  if (bulkDeleteBtn && !bulkDeleteBtn._bound) {
-    bulkDeleteBtn._bound = true;
-    bulkDeleteBtn.addEventListener("click", handleBulkDelete);
-  }
-}
-
-// ---------- bulk delete ----------
-async function handleBulkDelete() {
-  const checkboxes = document.querySelectorAll(
-    '.row-select:checked, input.row-check[type="checkbox"]:checked'
-  );
-
-  const ids = Array.from(checkboxes)
-    .map((cb) => cb.dataset.id)
-    .filter(Boolean);
-
-  if (!ids.length) {
-    return;
-  }
-
-  const ok = window.confirm(
-    ids.length === 1
-      ? "Delete this application?"
-      : `Delete ${ids.length} selected applications?`
-  );
-  if (!ok) return;
-
-  await Promise.all(
-    ids.map((id) =>
-      fetch(`/applications/${id}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          "X-CSRF-Token": meta("csrf-token"),
-        },
-      }).catch((e) => console.error("delete failed for id", id, e))
-    )
-  );
-
-  await loadApps();
-  await loadSankey();
-}
-
-// ---------- index table: data + filters + rendering ----------
-async function loadApps() {
-  const tbody = byId("apps-body") || $("#appsTable tbody");
-  if (!tbody) return;
-
-  // Remove old status select change handler - now handled by Manage button
-  // Status can only be changed through Manage mode
-
-  try {
-    const dataRaw = await getJSON("/applications", {
-      headers: { Accept: "application/json" },
-    });
-    ALL_APPS = Array.isArray(dataRaw)
-      ? dataRaw
-      : dataRaw?.applications ?? [];
-
-    populateMonthFilter(ALL_APPS);
-    renderFilteredApps();
-  } catch (err) {
-    console.error("[loadApps] failed:", err);
-    const count = byId("countLabel");
-    if (count) count.textContent = "";
-    tbody.innerHTML =
-      '<tr><td colspan="6" class="muted">Failed to load applications</td></tr>';
-  }
-}
-
-function populateMonthFilter(rows) {
-  const monthSel = byId("filterMonth") || byId("monthFilter");
-  if (!monthSel) return;
-
-  const prevValue = monthSel.value || "all";
-  const months = new Set();
-
-  rows.forEach((app) => {
-    const d = app.applied_on || (app.created_at && app.created_at.slice(0, 10));
-    if (!d) return;
-    months.add(d.slice(0, 7));
-  });
-
-  const sorted = Array.from(months).sort();
-
-  monthSel.innerHTML = "";
-  const optAll = document.createElement("option");
-  optAll.value = "all";
-  optAll.textContent = "All months";
-  monthSel.appendChild(optAll);
-
-  sorted.forEach((m) => {
-    const o = document.createElement("option");
-    o.value = m;
-    o.textContent = m;
-    monthSel.appendChild(o);
-  });
-
-  if (prevValue !== "all" && sorted.includes(prevValue)) {
-    monthSel.value = prevValue;
-    monthFilter = prevValue;
-  } else {
-    monthSel.value = "all";
-    monthFilter = "all";
-  }
-}
-
-function getFilteredApps() {
-  return ALL_APPS.filter((app) => {
-    const status = app.status || "Applied";
-    const statusOk =
-      statusFilter === "all" ||
-      status.toLowerCase() === statusFilter.toLowerCase();
-
-    const d = app.applied_on || (app.created_at && app.created_at.slice(0, 10));
-    const ym = d ? d.slice(0, 7) : null;
-    const monthOk = monthFilter === "all" || ym === monthFilter;
-
-    return statusOk && monthOk;
-  });
-}
-
-function renderFilteredApps() {
-  const tbody = byId("apps-body") || $("#appsTable tbody");
-  const count = byId("countLabel");
-  if (!tbody) return;
-
-  const apps = getFilteredApps();
-  tbody.innerHTML = "";
-
-  if (!apps.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="4" class="muted">No applications yet</td></tr>';
-    if (count) count.textContent = "0 items";
-    return;
-  }
-
-  const isEditMode = window.editAllMode || false;
-  
-  apps.forEach((row) => {
-    const appliedOn =
-      row.applied_on || (row.created_at ? row.created_at.slice(0, 10) : "");
-    const linkDisplay = row.url ? (row.url.length > 30 ? row.url.substring(0, 30) + '...' : row.url) : '—';
-
-    const tr = document.createElement("tr");
-    tr.dataset.id = row.id;
-    tr.dataset.originalData = JSON.stringify({
-      company: row.company || '',
-      applied_on: appliedOn,
-      url: row.url || '',
-      status: row.status || 'Applied'
-    });
-    
-    tr.innerHTML = `
-      <td class="company-cell">
-        <span class="cell-display">${row.company ?? ""}</span>
-        <input type="text" class="cell-edit" value="${row.company ?? ""}" style="display:none;" data-field="company">
-      </td>
-      <td class="date-cell">
-        <span class="cell-display">${appliedOn || "—"}</span>
-        <input type="date" class="cell-edit" value="${appliedOn || ""}" style="display:none;" data-field="applied_on">
-      </td>
-      <td class="link-cell">
-        ${
-          row.url
-            ? `<a href="${row.url}" target="_blank" rel="noopener noreferrer" class="table-link-btn cell-display" title="${row.url}">${linkDisplay}</a>`
-            : '<span class="cell-display">—</span>'
-        }
-        <input type="url" class="cell-edit" value="${row.url || ""}" style="display:none;" data-field="url" placeholder="https://...">
-      </td>
-      <td class="status-cell">
-        <span class="status-pill ${statusClass(row.status || "Applied")} cell-display">
-          ${row.status || "Applied"}
-        </span>
-        <select class="status-select cell-edit" data-id="${row.id}" style="display:none;" data-field="status">
-          ${buildStatusOptionsHTML(row.status || "Applied")}
-        </select>
-      </td>
-    `;
-    
-    // Set edit mode if enabled
-    if (isEditMode) {
-      tr.classList.add('edit-mode');
-      tr.querySelectorAll('.cell-display').forEach(el => el.style.display = 'none');
-      tr.querySelectorAll('.cell-edit').forEach(el => el.style.display = 'block');
-    }
-    
-    tbody.appendChild(tr);
-  });
-
-  if (count) {
-    const n = apps.length;
-    count.textContent = n === 1 ? "1 item" : `${n} items`;
-  }
-}
-
-function statusClass(status) {
-  const s = (status || "").toLowerCase();
-  if (s.includes("offer")) return "status-offer";
-  if (s.includes("declin") || s.includes("reject")) return "status-declined";
-  if (s.includes("ghost")) return "status-ghosted";
-  if (s.includes("interview") || s.startsWith("round")) return "status-interview";
-  if (s.includes("accept")) return "status-accepted";
-  return "status-applied";
-}
-
-function buildStatusOptionsHTML(current) {
-  const options = [
-    "Applied",
-    "Round1",
-    "Round2",
-    "Interview",
-    "Offer",
-    "Accepted",
-    "Declined",
-    "Ghosted",
-  ];
-  return options
-    .map((opt) => {
-      const selected =
-        (current || "").toLowerCase() === opt.toLowerCase() ? "selected" : "";
-      return `<option value="${opt}" ${selected}>${opt}</option>`;
-    })
-    .join("");
-}
-
-function toggleManageMode(id) {
-  const tr = document.querySelector(`tr[data-id="${id}"]`);
-  if (!tr) return;
-  
-  const isManaging = tr.dataset.manageMode === "true";
-  tr.dataset.manageMode = (!isManaging).toString();
-  
-  const statusPill = tr.querySelector(".status-pill");
-  const statusSelect = tr.querySelector(".status-select");
-  const manageBtn = tr.querySelector(".manage-btn");
-  const saveBtn = tr.querySelector(".save-btn");
-  const cancelBtn = tr.querySelector(".cancel-btn");
-  
-  if (!isManaging) {
-    // Enter manage mode
-    statusPill.style.display = "none";
-    statusSelect.style.display = "block";
-    manageBtn.style.display = "none";
-    saveBtn.style.display = "inline-block";
-    cancelBtn.style.display = "inline-block";
-  } else {
-    // Exit manage mode
-    statusPill.style.display = "inline-flex";
-    statusSelect.style.display = "none";
-    manageBtn.style.display = "inline-block";
-    saveBtn.style.display = "none";
-    cancelBtn.style.display = "none";
-  }
-}
-
-function cancelManageMode(id) {
-  const tr = document.querySelector(`tr[data-id="${id}"]`);
-  if (!tr) return;
-  
-  // Reset select to original value
-  const statusSelect = tr.querySelector(".status-select");
-  const statusPill = tr.querySelector(".status-pill");
-  const originalStatus = statusPill.textContent.trim();
-  statusSelect.value = originalStatus;
-  
-  // Exit manage mode
-  toggleManageMode(id);
-}
-
-async function saveStatus(id) {
-  const tr = document.querySelector(`tr[data-id="${id}"]`);
-  if (!tr) return;
-  
-  const statusSelect = tr.querySelector(".status-select");
-  const newStatus = statusSelect.value;
-  const statusPill = tr.querySelector(".status-pill");
-  
-  try {
-    await fetch(`/applications/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-CSRF-Token": meta("csrf-token"),
-      },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    
-    // Update the pill with new status and class
-    statusPill.textContent = newStatus;
-    statusPill.className = `status-pill ${statusClass(newStatus)}`;
-    
-    // Exit manage mode
-    toggleManageMode(id);
-    
-    // Reload sankey to reflect changes
-    await loadSankey();
-  } catch (err) {
-    console.error("[status update] failed:", err);
-    alert("Failed to update status. Please try again.");
-  }
-}
-
-// ---------- reveal ----------
 function enableReveal() {
   const els = document.querySelectorAll(".reveal");
   if (!els.length) return;
@@ -418,7 +20,7 @@ function enableReveal() {
   els.forEach((el) => io.observe(el));
 }
 
-// ---------- sankey ----------
+// ---------- sankey only ----------
 const SANKEY_NODE_COLORS = {
   Applied: "#4b73eb",
   Round1: "#a855f7",
@@ -432,7 +34,7 @@ const SANKEY_NODE_COLORS = {
 
 async function loadSankey() {
   try {
-    const el = document.getElementById("sankey");
+    const el = byId("sankey");
     if (!el || !window.Plotly) return;
 
     const res = await fetch("/applications/stats", {
@@ -442,9 +44,9 @@ async function loadSankey() {
     const data = await res.json();
 
     if (Array.isArray(data.links)) {
-      const src = [],
-        tgt = [],
-        val = [];
+      const src = [];
+      const tgt = [];
+      const val = [];
       data.links.forEach((l) => {
         src.push(l.source);
         tgt.push(l.target);
@@ -503,7 +105,7 @@ async function loadSankey() {
         color: "#12141a",
       },
       height: 450,
-      autosize: true
+      autosize: true,
     };
 
     await Plotly.react(el, plotData, layout, { displayModeBar: false });
@@ -517,8 +119,8 @@ async function loadSankey() {
       });
     }
   } catch (e) {
-    console.error(e);
-    const el = document.getElementById("sankey");
+    console.error("[loadSankey] failed:", e);
+    const el = byId("sankey");
     if (el) {
       el.innerHTML =
         '<div style="height:280px;display:flex;align-items:center;justify-content:center;color:#697386">Failed to render</div>';
@@ -526,25 +128,16 @@ async function loadSankey() {
   }
 }
 
-// ---------- boot ----------
-function boot() {
-  hookForm();
-  bindToolbar();
-  loadApps();
-  loadSankey();
+function bootSankey() {
+  if (byId("sankey")) {
+    loadSankey();
+  }
   enableReveal();
 }
 
-document.addEventListener("turbo:load", boot);
-document.addEventListener("turbo:render", boot);
-document.addEventListener("DOMContentLoaded", boot);
+document.addEventListener("turbo:load", bootSankey);
+document.addEventListener("turbo:render", bootSankey);
+document.addEventListener("DOMContentLoaded", bootSankey);
 
-Object.assign(window, { 
-  loadApps, 
-  loadSankey, 
-  boot, 
-  toggleManageMode, 
-  cancelManageMode, 
-  saveStatus,
-  statusClass
-});
+
+Object.assign(window, { loadSankey });
