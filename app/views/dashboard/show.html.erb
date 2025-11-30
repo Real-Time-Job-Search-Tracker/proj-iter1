@@ -1,48 +1,58 @@
 <style>
-  .heatmap-wrapper {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
+  /* GitHub-style heatmap */
+  .heatmap-container-wrapper {
     width: 100%;
     overflow-x: auto;
-    padding-bottom: 10px;
+  }
+
+  .heatmap-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px 0;
   }
 
   .heatmap-weekdays {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 130px;
-    padding-top: 25px;
-    padding-right: 5px;
-    font-size: 11px;
+    gap: 3px;
+    padding-top: 27px;
+    padding-right: 4px;
+    font-size: 12px;
     color: #656d76;
     line-height: 1;
+    flex-shrink: 0;
   }
 
   .weekday-label {
-    height: 16px;
+    height: 11px;
     display: flex;
     align-items: center;
+    margin: 0;
+    padding: 0;
   }
 
   .heatmap-content {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 0;
+    flex: 1;
+    min-width: 0;
   }
 
   .heatmap-months {
     display: flex;
-    height: 15px;
+    height: 17px;
     position: relative;
+    margin-bottom: 4px;
   }
 
   .month-label {
-    font-size: 10px;
+    font-size: 12px;
     color: #656d76;
     position: absolute;
     top: 0;
+    white-space: nowrap;
   }
 
   .heatmap-grid {
@@ -57,18 +67,26 @@
   }
 
   .day-cell {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
     background-color: #ebedf0;
     box-sizing: border-box;
     border: 1px solid rgba(27, 31, 35, 0.06);
+    cursor: pointer;
+    transition: all 0.1s ease;
   }
 
-  .day-cell.level-1 { background-color: #9be9a8; border-color: rgba(27, 31, 35, 0.06); }
-  .day-cell.level-2 { background-color: #40c463; border-color: rgba(27, 31, 35, 0.06); }
-  .day-cell.level-3 { background-color: #30a14e; border-color: rgba(27, 31, 35, 0.06); }
-  .day-cell.level-4 { background-color: #216e39; border-color: rgba(27, 31, 35, 0.06); }
+  .day-cell:hover {
+    border-color: rgba(27, 31, 35, 0.2);
+    transform: scale(1.2);
+  }
+
+  .day-cell.level-0 { background-color: #ebedf0; }
+  .day-cell.level-1 { background-color: #9be9a8; }
+  .day-cell.level-2 { background-color: #40c463; }
+  .day-cell.level-3 { background-color: #30a14e; }
+  .day-cell.level-4 { background-color: #216e39; }
 
   .heatmap-legend {
     display: flex;
@@ -76,8 +94,91 @@
     justify-content: flex-end;
     gap: 4px;
     margin-top: 8px;
-    font-size: 10px;
+    font-size: 11px;
     color: #656d76;
+  }
+
+  .heatmap-year-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .heatmap-year-selector select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Editable table cells */
+  .editable-cell {
+    position: relative;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  .editable-cell:hover {
+    background-color: #f3f4f6;
+  }
+
+  .editable-cell:hover .edit-icon-btn {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .editable-cell.editing {
+    padding: 4px 8px;
+  }
+
+  .edit-icon-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    color: #6b7280;
+    z-index: 10;
+  }
+
+  .edit-icon-btn:hover {
+    background: #f3f4f6;
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+
+  .editable-cell input,
+  .editable-cell select {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #6366f1;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #ffffff;
+    outline: none;
+  }
+
+  .editable-cell input:focus,
+  .editable-cell select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
   }
 
   .charts-row {
@@ -107,15 +208,16 @@
   }
 
   .view-toggle-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
     border: 1px solid #e5e7eb;
     background: #ffffff;
     color: #6b7280;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .view-toggle-btn:hover {
@@ -133,27 +235,140 @@
     margin-top: 1rem;
   }
 
+  .status-filter {
+    height: 32px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .status-filter:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  #countLabel {
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
   .edit-all-btn {
     display: inline-flex;
     align-items: center;
     padding: 4px 10px;
-    border-radius: 999px;
+    border-radius: 6px;
     border: 1px solid #e5e7eb;
-    background: #f9fafb;
+    background: #ffffff;
+    color: #6b7280;
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     gap: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .edit-all-btn:hover {
-    background: #eef2ff;
-    border-color: #c7d2fe;
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+  }
+
+  .edit-all-btn .edit-icon {
+    font-size: 12px;
+    opacity: 0.8;
   }
 
   @media (max-width: 900px) {
     .charts-row {
       grid-template-columns: 1fr;
       gap: 1rem;
+    }
+  }
+
+  /* Responsive table and chart styles */
+  @media (max-width: 768px) {
+    .panel-header {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 1rem;
+    }
+
+    .panel-header > div:first-child {
+      width: 100%;
+    }
+
+    .panel-header > div:last-child {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #apps-table {
+      min-width: 600px;
+    }
+
+    .row-actions {
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+
+    .status-select {
+      width: 100%;
+      min-width: auto;
+    }
+
+    .board-container {
+      flex-direction: column;
+      overflow-x: visible;
+    }
+
+    .board-column {
+      min-width: 100% !important;
+      width: 100%;
+    }
+
+    .view-toggle-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+
+    .edit-all-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .panel-header > div:last-child {
+      flex-direction: column;
+    }
+
+    .status-filter,
+    .view-toggle-btn {
+      width: 100%;
+    }
+
+    #paginationBar {
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    #paginationBar > div {
+      width: 100%;
+      justify-content: space-between;
     }
   }
 </style>
@@ -300,12 +515,19 @@
   <!-- 新加：上面的两个图（heatmap + status donut） -->
   <div class="charts-row">
     <div class="card chart-card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <h2 style="margin:0;">Application Activity</h2>
-        <span style="font-size:0.85rem; color:#656d76;">Last 6 months</span>
+        <div class="heatmap-year-selector">
+          <select id="heatmap-year-select">
+            <% current_year = Date.today.year %>
+            <% (current_year - 2).upto(current_year) do |year| %>
+              <option value="<%= year %>" <%= 'selected' if year == current_year %>><%= year %></option>
+            <% end %>
+          </select>
+        </div>
       </div>
-      <div id="heatmap-container"
-           style="flex: 1; display: flex; align-items: center; justify-content: center; overflow-x: auto; width: 100%;">
+      <div class="heatmap-container-wrapper">
+        <div id="heatmap-container"></div>
       </div>
     </div>
 
@@ -322,16 +544,16 @@
 
   <!-- Applications 主块：用队员新的 manage + 你的 Edit + Table/Chart -->
   <div class="section card">
-    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="display:flex;align-items:center;gap:8px;">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:1rem;border-bottom:1px solid #e5e7eb;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:12px;">
         <h2 style="margin:0">Applications</h2>
         <button id="edit-all-btn" type="button" class="edit-all-btn">
           <span class="edit-icon">✏️</span>
-          <span class="edit-text" style="font-size:12px; margin-left:4px;">Edit</span>
+          <span class="edit-text">Edit</span>
         </button>
       </div>
 
-      <div style="display:flex;align-items:center;gap:0.75rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
         <span id="countLabel" class="muted"></span>
 
         <select id="statusFilter" class="status-filter">
@@ -394,7 +616,6 @@
                 <th>Company</th>
                 <th>Title</th>
                 <th>Status</th>
-                <th>Actions</th>
                 <th>Job posting</th>
               </tr>
             </thead>
@@ -423,9 +644,10 @@
         </div>
       </div>
 
-
-    <div id="chart-view" class="view-container" style="display:none;">
-      <div id="applications-chart" style="width: 100%; height: 400px;"></div>
+      <!-- Notion-style board view embedded in table -->
+      <div id="chart-view" class="view-container" style="display:none;margin-top:1.5rem;">
+        <div id="applications-chart" style="width: 100%; min-height: 400px;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -564,25 +786,34 @@
     }
 
     renderStatusDonut();
-    renderGitHubHeatmap();
+    
+    const yearSelect = document.getElementById("heatmap-year-select");
+    if (yearSelect) {
+      yearSelect.addEventListener("change", (e) => {
+        renderGitHubHeatmap(parseInt(e.target.value));
+      });
+    }
+    
+    renderGitHubHeatmap(new Date().getFullYear());
     reloadApplications();
   });
 
   function switchView(view) {
     const tableView = document.getElementById("table-view");
     const chartView = document.getElementById("chart-view");
+    const appsWrapper = document.getElementById("apps-wrapper");
     const tableBtn = document.getElementById("view-table-btn");
     const chartBtn = document.getElementById("view-chart-btn");
 
     if (!tableView || !chartView || !tableBtn || !chartBtn) return;
 
     if (view === "table") {
-      tableView.style.display = "block";
+      if (appsWrapper) appsWrapper.style.display = "block";
       chartView.style.display = "none";
       tableBtn.classList.add("active");
       chartBtn.classList.remove("active");
     } else {
-      tableView.style.display = "none";
+      if (appsWrapper) appsWrapper.style.display = "none";
       chartView.style.display = "block";
       chartBtn.classList.add("active");
       tableBtn.classList.remove("active");
@@ -734,10 +965,10 @@
       table.dataset.managing = managingState ? "1" : "0";
     }
 
-    if (!rows.length) {
+      if (!rows.length) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
-      td.colSpan = managingState ? 7 : 6;
+      td.colSpan = managingState ? 6 : 5;
       td.className = "muted";
       td.textContent = "No applications yet";
       tr.appendChild(td);
@@ -761,71 +992,81 @@
 
       const statusText = app.status || "Applied";
 
+      // Applied on - editable
       const tdDate = document.createElement("td");
+      tdDate.className = "editable-cell";
       const d = extractDate(app);
-      tdDate.textContent = d || "—";
+      const dateText = document.createTextNode(d || "—");
+      tdDate.appendChild(dateText);
+      tdDate.dataset.field = "applied_on";
+      tdDate.dataset.id = app.id;
+      tdDate.dataset.value = d || "";
+      addEditIcon(tdDate, makeEditable);
       tr.appendChild(tdDate);
 
+      // Company - editable
       const tdCompany = document.createElement("td");
+      tdCompany.className = "editable-cell";
       tdCompany.textContent = app.company || "(unknown company)";
+      tdCompany.dataset.field = "company";
+      tdCompany.dataset.id = app.id;
+      tdCompany.dataset.value = app.company || "";
+      addEditIcon(tdCompany, makeEditable);
       tr.appendChild(tdCompany);
 
+      // Title - editable
       const tdTitle = document.createElement("td");
+      tdTitle.className = "editable-cell";
       tdTitle.textContent = app.title || "—";
+      tdTitle.dataset.field = "title";
+      tdTitle.dataset.id = app.id;
+      tdTitle.dataset.value = app.title || "";
+      addEditIcon(tdTitle, makeEditable);
       tr.appendChild(tdTitle);
 
+      // Status - editable dropdown
       const tdStatus = document.createElement("td");
+      tdStatus.className = "editable-cell";
       const statusSpan = document.createElement("span");
       statusSpan.className = "status-pill " + statusClass(statusText);
       statusSpan.textContent = statusText;
       tdStatus.appendChild(statusSpan);
+      tdStatus.dataset.field = "status";
+      tdStatus.dataset.id = app.id;
+      tdStatus.dataset.value = statusText;
+      addEditIcon(tdStatus, makeEditableSelect);
       tr.appendChild(tdStatus);
 
-      const tdActions = document.createElement("td");
-      tdActions.className = "row-actions";
-
-      const select = document.createElement("select");
-      select.className = "status-select";
-
-      const options = [
-        "Applied",
-        "Round1",
-        "Round2",
-        "Interview",
-        "Offer",
-        "Accepted",
-        "Declined",
-        "Ghosted",
-      ];
-      options.forEach((opt) => {
-        const o = document.createElement("option");
-        o.value = opt;
-        o.textContent = opt;
-        if ((statusText || "").toLowerCase() === opt.toLowerCase()) {
-          o.selected = true;
-        }
-        select.appendChild(o);
-      });
-
-      select.addEventListener("change", () => {
-        updateApplicationStatus(app.id, select.value);
-      });
-
-      tdActions.appendChild(select);
-      tr.appendChild(tdActions);
-
+      // Job posting URL - clickable and editable
       const tdLink = document.createElement("td");
+      tdLink.className = "editable-cell";
+      tdLink.dataset.field = "url";
+      tdLink.dataset.id = app.id;
+      tdLink.dataset.value = app.url || "";
+      
       if (app.url) {
-        const linkBtn = document.createElement("a");
-        linkBtn.href = app.url;
-        linkBtn.target = "_blank";
-        linkBtn.rel = "noopener noreferrer";
-        linkBtn.className = "table-link-btn";
-        linkBtn.textContent = "View job";
-        tdLink.appendChild(linkBtn);
+        // Shorten URL for display
+        const urlDisplay = shortenUrl(app.url);
+        const urlSpan = document.createElement("span");
+        urlSpan.style.color = "#6366f1";
+        urlSpan.style.cursor = "pointer";
+        urlSpan.style.textDecoration = "underline";
+        urlSpan.textContent = urlDisplay;
+        urlSpan.title = app.url;
+        
+        // Click to open
+        urlSpan.addEventListener("click", (e) => {
+          e.stopPropagation();
+          window.open(app.url, "_blank", "noopener,noreferrer");
+        });
+        
+        tdLink.appendChild(urlSpan);
+        addEditIcon(tdLink, makeEditableUrl);
       } else {
         tdLink.textContent = "—";
+        addEditIcon(tdLink, makeEditable);
       }
+      
       tr.appendChild(tdLink);
 
       tbody.appendChild(tr);
@@ -860,10 +1101,10 @@
     if (editBtn) {
       if (managingState) {
         editBtn.innerHTML =
-          '<span class="edit-icon">✔</span><span class="edit-text" style="font-size:12px; margin-left:4px;">Done</span>';
+          '<span class="edit-icon">✔</span><span class="edit-text">Done</span>';
       } else {
         editBtn.innerHTML =
-          '<span class="edit-icon">✏️</span><span class="edit-text" style="font-size:12px; margin-left:4px;">Edit</span>';
+          '<span class="edit-icon">✏️</span><span class="edit-text">Edit</span>';
       }
     }
 
@@ -878,21 +1119,246 @@
     });
   }
 
-  function updateApplicationStatus(id, status) {
+  function makeEditable(e, cell) {
+    if (!cell) cell = e.currentTarget;
+    if (cell.classList.contains("editing")) return;
+    
+    const field = cell.dataset.field;
+    const id = cell.dataset.id;
+    const currentValue = cell.dataset.value || "";
+    
+    cell.classList.add("editing");
+    const input = document.createElement("input");
+    input.type = field === "applied_on" ? "date" : "text";
+    input.value = currentValue;
+    input.style.width = "100%";
+    
+    const originalHTML = cell.innerHTML;
+    const originalText = cell.textContent.replace("✏️", "").trim();
+    cell.innerHTML = "";
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+    
+    const save = () => {
+      const newValue = input.value.trim();
+      if (newValue !== currentValue) {
+        updateApplicationField(id, field, newValue, cell);
+      } else {
+        cell.classList.remove("editing");
+        cell.innerHTML = originalHTML;
+      }
+    };
+    
+    const cancel = () => {
+      cell.classList.remove("editing");
+      cell.innerHTML = originalHTML;
+    };
+    
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancel();
+      }
+    });
+  }
+
+  function makeEditableSelect(e, cell) {
+    if (!cell) cell = e.currentTarget;
+    if (cell.classList.contains("editing")) return;
+    
+    const field = cell.dataset.field;
+    const id = cell.dataset.id;
+    const currentValue = cell.dataset.value || "";
+    
+    cell.classList.add("editing");
+    const select = document.createElement("select");
+    select.style.width = "100%";
+    
+    const options = [
+      "Applied",
+      "Round1",
+      "Round2",
+      "Interview",
+      "Offer",
+      "Accepted",
+      "Declined",
+      "Ghosted",
+    ];
+    
+    options.forEach((opt) => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === currentValue) o.selected = true;
+      select.appendChild(o);
+    });
+    
+    const originalHTML = cell.innerHTML;
+    cell.innerHTML = "";
+    cell.appendChild(select);
+    select.focus();
+    
+    const save = () => {
+      const newValue = select.value;
+      if (newValue !== currentValue) {
+        updateApplicationField(id, field, newValue, cell);
+      } else {
+        cell.classList.remove("editing");
+        cell.innerHTML = originalHTML;
+      }
+    };
+    
+    select.addEventListener("change", save);
+    select.addEventListener("blur", save);
+  }
+
+  function makeEditableUrl(e, cell) {
+    if (e) e.stopPropagation();
+    if (!cell) cell = e ? e.currentTarget : null;
+    if (!cell || cell.classList.contains("editing")) return;
+    
+    const field = cell.dataset.field;
+    const id = cell.dataset.id;
+    const currentValue = cell.dataset.value || "";
+    
+    cell.classList.add("editing");
+    const input = document.createElement("input");
+    input.type = "url";
+    input.value = currentValue;
+    input.style.width = "100%";
+    input.placeholder = "Enter job URL";
+    
+    const originalHTML = cell.innerHTML;
+    cell.innerHTML = "";
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+    
+    const save = () => {
+      const newValue = input.value.trim();
+      if (newValue !== currentValue) {
+        updateApplicationField(id, field, newValue, cell);
+      } else {
+        cell.classList.remove("editing");
+        cell.innerHTML = originalHTML;
+      }
+    };
+    
+    const cancel = () => {
+      cell.classList.remove("editing");
+      cell.innerHTML = originalHTML;
+    };
+    
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancel();
+      }
+    });
+  }
+
+  function shortenUrl(url) {
+    if (!url) return "—";
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace("www.", "");
+      
+      // Show only hostname, max 30 characters
+      if (hostname.length > 30) {
+        return hostname.substring(0, 27) + "...";
+      }
+      return hostname;
+    } catch (e) {
+      // If URL parsing fails, just truncate the string to 30 chars
+      return url.length > 30 ? url.substring(0, 27) + "..." : url;
+    }
+  }
+
+  function addEditIcon(cell, editHandler) {
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-icon-btn";
+    editBtn.innerHTML = "✏️";
+    editBtn.type = "button";
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      editHandler(e, cell);
+    });
+    cell.appendChild(editBtn);
+  }
+
+  function updateApplicationField(id, field, value, cellElement) {
     if (!id) return;
+    
+    const payload = {};
+    payload[field] = value;
+    
     fetch(`/applications/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(payload),
     })
       .then((r) => {
         if (!r.ok && r.status !== 204) throw r;
+        return r.json();
+      })
+      .then((data) => {
+        cellElement.classList.remove("editing");
+        cellElement.dataset.value = value;
+        
+        if (field === "status") {
+          const statusSpan = document.createElement("span");
+          statusSpan.className = "status-pill " + statusClass(value);
+          statusSpan.textContent = value;
+          cellElement.innerHTML = "";
+          cellElement.appendChild(statusSpan);
+        } else if (field === "applied_on") {
+          cellElement.textContent = value || "—";
+        } else if (field === "url") {
+          // Update URL display
+          if (value) {
+            const urlDisplay = shortenUrl(value);
+            const urlSpan = document.createElement("span");
+            urlSpan.style.color = "#6366f1";
+            urlSpan.style.cursor = "pointer";
+            urlSpan.style.textDecoration = "underline";
+            urlSpan.textContent = urlDisplay;
+            urlSpan.title = value;
+            
+            urlSpan.addEventListener("click", (e) => {
+              e.stopPropagation();
+              window.open(value, "_blank", "noopener,noreferrer");
+            });
+            
+            cellElement.innerHTML = "";
+            cellElement.appendChild(urlSpan);
+            addEditIcon(cellElement, makeEditableUrl);
+          } else {
+            cellElement.textContent = "—";
+            addEditIcon(cellElement, makeEditable);
+          }
+        } else {
+          cellElement.textContent = value || (field === "company" ? "(unknown company)" : "—");
+        }
+        
         reloadApplications();
       })
-      .catch((e) => console.error("Status update failed", e));
+      .catch((e) => {
+        console.error("Update failed", e);
+        cellElement.classList.remove("editing");
+        alert("Failed to update. Please try again.");
+      });
   }
 
   function handleBulkDelete() {
@@ -979,42 +1445,52 @@
       }
     });
 
+    // Filter out statuses with no applications
+    const statusesWithData = Object.keys(statusGroups).filter(status => statusGroups[status].length > 0);
+    
+    if (statusesWithData.length === 0) {
+      container.innerHTML =
+        "<div class='muted' style='text-align:center; padding-top:150px;'>No applications to display</div>";
+      return;
+    }
+
     const boardHTML = `
       <div class="board-container"
-           style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;padding:1rem;">
-        ${Object.keys(statusGroups).map(status => {
+           style="display:flex;gap:1rem;overflow-x:auto;padding:0.5rem;min-height:400px;">
+        ${statusesWithData.map(status => {
           const statusApps = statusGroups[status];
-          if (!statusApps.length) return "";
           return `
             <div class="board-column"
-                 style="background:#f9fafb;border-radius:8px;padding:1rem;min-height:200px;">
+                 style="background:#f9fafb;border-radius:12px;padding:1rem;min-width:280px;flex-shrink:0;min-height:200px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:2px solid #e5e7eb;">
                 <span class="status-pill ${statusClass(status)}">${status}</span>
-                <span style="font-size:12px;color:#6b7280;">${statusApps.length}</span>
+                <span style="font-size:12px;color:#6b7280;font-weight:500;">${statusApps.length}</span>
               </div>
               <div class="board-cards" style="display:flex;flex-direction:column;gap:0.75rem;">
                 ${statusApps.map(app => {
                   const appliedOn = app.applied_on || (app.created_at ? app.created_at.slice(0, 10) : "—");
                   const linkDisplay = app.url
-                    ? (app.url.length > 40 ? app.url.substring(0, 40) + "..." : app.url)
+                    ? (app.url.length > 35 ? app.url.substring(0, 35) + "..." : app.url)
                     : "—";
                   return `
                     <div class="board-card"
-                         style="background:white;border-radius:6px;padding:0.75rem;border:1px solid #e5e7eb;cursor:pointer;"
+                         style="background:white;border-radius:8px;padding:0.875rem;border:1px solid #e5e7eb;cursor:pointer;transition:all 0.2s ease;box-shadow:0 1px 2px rgba(0,0,0,0.05);"
+                         onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';this.style.transform='translateY(-2px)'"
+                         onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';this.style.transform='translateY(0)'"
                          onclick="window.open('${app.url || "#"}','_blank')">
-                      <div style="font-weight:600;margin-bottom:0.5rem;color:#111827;">
+                      <div style="font-weight:600;margin-bottom:0.5rem;color:#111827;font-size:14px;">
                         ${app.company || "Unknown"}
                       </div>
-                      <div style="font-size:12px;color:#6b7280;margin-bottom:0.25rem;">
+                      <div style="font-size:12px;color:#6b7280;margin-bottom:0.375rem;line-height:1.4;">
                         ${app.title || ""}
                       </div>
                       <div style="font-size:11px;color:#9ca3af;margin-bottom:0.5rem;">
                         ${appliedOn}
                       </div>
                       ${app.url ? `
-                        <div style="font-size:11px;color:#6366f1;text-decoration:underline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                        <div style="font-size:11px;color:#6366f1;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid #f3f4f6;"
                              title="${app.url}">
-                          ${linkDisplay}
+                          🔗 ${linkDisplay}
                         </div>` : ""}
                     </div>
                   `;
@@ -1072,91 +1548,124 @@
     }
   }
 
-  function renderGitHubHeatmap() {
+  function renderGitHubHeatmap(year) {
     const container = document.getElementById("heatmap-container");
     if (!container) return;
 
+    container.innerHTML = "";
+
     const data = window.HEATMAP_DATA || {};
+    const selectedYear = year || new Date().getFullYear();
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (26 * 7));
+    
+    // Start from January 1st of the selected year
+    const startDate = new Date(selectedYear, 0, 1);
+    // End at December 31st of the selected year, or today if current year
+    const endDate = selectedYear === today.getFullYear() 
+      ? today 
+      : new Date(selectedYear, 11, 31);
+    
+    // Find the first Sunday before or on Jan 1st
     const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek);
+    const firstSunday = new Date(startDate);
+    firstSunday.setDate(startDate.getDate() - dayOfWeek);
 
     const wrapper = document.createElement("div");
     wrapper.className = "heatmap-wrapper";
 
+    // Weekday labels column
     const weekdaysCol = document.createElement("div");
     weekdaysCol.className = "heatmap-weekdays";
-
-    const cellHeight = 16;
-    const gap = 3;
-    const rowHeight = cellHeight + gap;
-    const monPos = 25 + (1 * rowHeight) - (cellHeight / 2);
-    const wedPos = 25 + (3 * rowHeight) - (cellHeight / 2);
-    const friPos = 25 + (5 * rowHeight) - (cellHeight / 2);
-
     weekdaysCol.innerHTML = `
-      <div class="weekday-label" style="margin-top:${monPos}px;">Mon</div>
-      <div class="weekday-label" style="margin-top:${wedPos}px;">Wed</div>
-      <div class="weekday-label" style="margin-top:${friPos}px;">Fri</div>
+      <div class="weekday-label"></div>
+      <div class="weekday-label">Mon</div>
+      <div class="weekday-label"></div>
+      <div class="weekday-label">Wed</div>
+      <div class="weekday-label"></div>
+      <div class="weekday-label">Fri</div>
+      <div class="weekday-label"></div>
     `;
     wrapper.appendChild(weekdaysCol);
 
+    // Content column
     const contentCol = document.createElement("div");
     contentCol.className = "heatmap-content";
 
+    // Months row
     const monthsRow = document.createElement("div");
     monthsRow.className = "heatmap-months";
+    
+    // Grid row
     const gridRow = document.createElement("div");
     gridRow.className = "heatmap-grid";
 
-    let currentDate = new Date(startDate);
+    let currentDate = new Date(firstSunday);
+    const cellSize = 11;
+    const gap = 3;
+    const weekWidth = cellSize + gap;
     const monthsAdded = new Set();
+    let lastMonthName = null;
+    let weekIndex = 0;
 
-    for (let w = 0; w < 27; w++) {
+    // Generate 53 weeks (full year + some overflow)
+    while (weekIndex < 53) {
       const weekCol = document.createElement("div");
       weekCol.className = "heatmap-week";
 
-      const currentMonthName = currentDate.toLocaleString("default", { month: "short" });
-      if (!monthsAdded.has(currentMonthName) && w > 0) {
-        monthsAdded.add(currentMonthName);
-        const monthLabel = document.createElement("div");
-        monthLabel.className = "month-label";
-        monthLabel.textContent = currentMonthName;
-        monthLabel.style.left = `${w * 19}px`;
-        monthsRow.appendChild(monthLabel);
+      // Check the first day of the week for month label
+      const weekStartDate = new Date(currentDate);
+      const currentMonthName = weekStartDate.toLocaleString("default", { month: "short" });
+      
+      // Add month label when we encounter a new month
+      if (currentMonthName !== lastMonthName && weekStartDate.getDate() <= 7) {
+        if (lastMonthName !== null || weekIndex === 0) {
+          const monthLabel = document.createElement("div");
+          monthLabel.className = "month-label";
+          monthLabel.textContent = currentMonthName;
+          monthLabel.style.left = `${weekIndex * weekWidth}px`;
+          monthsRow.appendChild(monthLabel);
+        }
+        lastMonthName = currentMonthName;
       }
 
+      // Generate 7 days for this week
       for (let d = 0; d < 7; d++) {
         const dateStr = currentDate.toISOString().split("T")[0];
-        const count = data[dateStr] || 0;
+        const yearOfDate = currentDate.getFullYear();
+        const count = (yearOfDate === selectedYear && data[dateStr]) ? data[dateStr] : 0;
 
         const cell = document.createElement("div");
-        cell.className = "day-cell";
-        cell.title = `${dateStr}: ${count} applications`;
-
-        if (currentDate <= today) {
-          if (count > 0) cell.classList.add("level-1");
-          if (count > 1) cell.classList.add("level-2");
-          if (count > 3) cell.classList.add("level-3");
+        cell.className = "day-cell level-0";
+        
+        // Determine level based on count
+        if (currentDate <= endDate && currentDate >= startDate) {
           if (count > 5) cell.classList.add("level-4");
+          else if (count > 3) cell.classList.add("level-3");
+          else if (count > 1) cell.classList.add("level-2");
+          else if (count > 0) cell.classList.add("level-1");
         }
-
+        
+        cell.title = `${dateStr}: ${count} application${count !== 1 ? 's' : ''}`;
         weekCol.appendChild(cell);
         currentDate.setDate(currentDate.getDate() + 1);
       }
+      
       gridRow.appendChild(weekCol);
+      weekIndex++;
+      
+      // Stop if we've passed the end date
+      if (currentDate > endDate && weekIndex > 1) break;
     }
 
     contentCol.appendChild(monthsRow);
     contentCol.appendChild(gridRow);
 
+    // Legend
     const legend = document.createElement("div");
     legend.className = "heatmap-legend";
     legend.innerHTML = `
       <span>Less</span>
-      <div class="day-cell"></div>
+      <div class="day-cell level-0"></div>
       <div class="day-cell level-1"></div>
       <div class="day-cell level-2"></div>
       <div class="day-cell level-3"></div>
