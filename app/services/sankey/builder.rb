@@ -3,7 +3,8 @@ module Sankey
     def self.call(apps, ghost_days: 14)
       round_labels = Set.new
 
-      apps.find_each do |a|
+      # Changed from find_each to each to support both ActiveRecord relations and Arrays
+      apps.each do |a|
         Array(a.history).each do |h|
           lab = stage_label(h["status"])
           round_labels << lab if lab.start_with?("Round")
@@ -11,7 +12,6 @@ module Sankey
       end
 
       rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
-
 
       nodes = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
       idx   = nodes.each_with_index.to_h
@@ -27,11 +27,12 @@ module Sankey
         klass[key] = cls
       end
 
-      apps.find_each do |a|
+      # Changed from find_each to each
+      apps.each do |a|
         path = canonical_path(a.history, a.status)
 
         path.each_cons(2) do |u, v|
-        cls =
+          cls =
             if u == "Applications" && v == "Applied"               then "apps_to_applied"
             elsif u == "Applications" && v.start_with?("Round")    then "apps_to_round"
             elsif u == "Applications" && v == "Ghosted"            then "apps_to_ghosted"
@@ -46,7 +47,6 @@ module Sankey
             elsif u == "Offer" && v == "Ghosted"                   then "offer_to_ghosted"
             else "other"
             end
-
 
           add.call(u, v, cls)
         end
@@ -63,7 +63,6 @@ module Sankey
     def self.stage_label(status)
       status.to_s.capitalize
     end
-
 
     def self.canonical_path(history, current_status)
       path = [ "Applications" ]
