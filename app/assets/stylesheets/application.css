@@ -263,7 +263,12 @@ td:last-child { text-align: right; }
 }
 
 /* Sankey container */
-#sankey { min-height: 420px; }
+#sankey { 
+  min-height: 450px; 
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
 
 /* Reveal-on-scroll utility */
 .reveal {
@@ -799,6 +804,11 @@ td:last-child { text-align: right; }
   color: #4b5563;
 }
 
+.status-accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
 /* Row actions: status select + delete button */
 .row-actions {
   display: flex;
@@ -832,6 +842,101 @@ td:last-child { text-align: right; }
 .row-delete-btn:hover {
   background: #fecaca;
   transform: translateY(-1px);
+}
+
+/* Manage button styles */
+.manage-btn, .save-btn, .cancel-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 6px;
+}
+
+.manage-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.save-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+.status-cell {
+  position: relative;
+}
+
+.status-select {
+  height: 32px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  background: #ffffff;
+  min-width: 120px;
+}
+
+/* Edit all button */
+.edit-all-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-all-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.edit-icon {
+  font-size: 14px;
+}
+
+/* Edit mode styles */
+tr.edit-mode {
+  background: #fef3c7;
+}
+
+.cell-edit {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.cell-edit:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
 }
 
 

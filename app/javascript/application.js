@@ -142,34 +142,8 @@ async function loadApps() {
   const tbody = byId("apps-body") || $("#appsTable tbody");
   if (!tbody) return;
 
-  if (!tbody._boundHandlers) {
-    tbody._boundHandlers = true;
-
-    tbody.addEventListener("change", async (e) => {
-      const sel = e.target.closest("select.status-select");
-      if (!sel) return;
-
-      const id = sel.dataset.id;
-      const status = sel.value;
-      if (!id || !status) return;
-
-      try {
-        await fetch(`/applications/${id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "X-CSRF-Token": meta("csrf-token"),
-          },
-          body: JSON.stringify({ status }),
-        });
-        await loadApps();
-        await loadSankey();
-      } catch (err) {
-        console.error("[status update] failed:", err);
-      }
-    });
-  }
+  // Remove old status select change handler - now handled by Manage button
+  // Status can only be changed through Manage mode
 
   try {
     const dataRaw = await getJSON("/applications", {
@@ -252,42 +226,61 @@ function renderFilteredApps() {
 
   if (!apps.length) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="muted">No applications yet</td></tr>';
+      '<tr><td colspan="4" class="muted">No applications yet</td></tr>';
     if (count) count.textContent = "0 items";
     return;
   }
 
+  const isEditMode = window.editAllMode || false;
+  
   apps.forEach((row) => {
     const appliedOn =
       row.applied_on || (row.created_at ? row.created_at.slice(0, 10) : "");
+    const linkDisplay = row.url ? (row.url.length > 30 ? row.url.substring(0, 30) + '...' : row.url) : '—';
 
     const tr = document.createElement("tr");
+    tr.dataset.id = row.id;
+    tr.dataset.originalData = JSON.stringify({
+      company: row.company || '',
+      applied_on: appliedOn,
+      url: row.url || '',
+      status: row.status || 'Applied'
+    });
+    
     tr.innerHTML = `
-      <td>
-        <input
-          type="checkbox"
-          class="row-check"
-          data-id="${row.id}"
-        />
+      <td class="company-cell">
+        <span class="cell-display">${row.company ?? ""}</span>
+        <input type="text" class="cell-edit" value="${row.company ?? ""}" style="display:none;" data-field="company">
       </td>
-      <td>${row.company ?? ""}</td>
-      <td>${appliedOn || "—"}</td>
-      <td>
+      <td class="date-cell">
+        <span class="cell-display">${appliedOn || "—"}</span>
+        <input type="date" class="cell-edit" value="${appliedOn || ""}" style="display:none;" data-field="applied_on">
+      </td>
+      <td class="link-cell">
         ${
           row.url
-            ? `<a href="${row.url}" target="_blank" rel="noopener noreferrer" class="table-link-btn">View job</a>`
-            : "—"
+            ? `<a href="${row.url}" target="_blank" rel="noopener noreferrer" class="table-link-btn cell-display" title="${row.url}">${linkDisplay}</a>`
+            : '<span class="cell-display">—</span>'
         }
+        <input type="url" class="cell-edit" value="${row.url || ""}" style="display:none;" data-field="url" placeholder="https://...">
       </td>
-      <td>
-        <span class="status-pill ${statusClass(row.status || "Applied")}">
+      <td class="status-cell">
+        <span class="status-pill ${statusClass(row.status || "Applied")} cell-display">
           ${row.status || "Applied"}
         </span>
-      </td>
-      <td style="text-align:right;">
-        ${buildStatusSelectHTML(row.id, row.status || "Applied")}
+        <select class="status-select cell-edit" data-id="${row.id}" style="display:none;" data-field="status">
+          ${buildStatusOptionsHTML(row.status || "Applied")}
+        </select>
       </td>
     `;
+    
+    // Set edit mode if enabled
+    if (isEditMode) {
+      tr.classList.add('edit-mode');
+      tr.querySelectorAll('.cell-display').forEach(el => el.style.display = 'none');
+      tr.querySelectorAll('.cell-edit').forEach(el => el.style.display = 'block');
+    }
+    
     tbody.appendChild(tr);
   });
 
@@ -307,7 +300,7 @@ function statusClass(status) {
   return "status-applied";
 }
 
-function buildStatusSelectHTML(id, current) {
+function buildStatusOptionsHTML(current) {
   const options = [
     "Applied",
     "Round1",
@@ -318,14 +311,91 @@ function buildStatusSelectHTML(id, current) {
     "Declined",
     "Ghosted",
   ];
-  const optsHTML = options
+  return options
     .map((opt) => {
       const selected =
         (current || "").toLowerCase() === opt.toLowerCase() ? "selected" : "";
       return `<option value="${opt}" ${selected}>${opt}</option>`;
     })
     .join("");
-  return `<select class="status-select" data-id="${id}">${optsHTML}</select>`;
+}
+
+function toggleManageMode(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) return;
+  
+  const isManaging = tr.dataset.manageMode === "true";
+  tr.dataset.manageMode = (!isManaging).toString();
+  
+  const statusPill = tr.querySelector(".status-pill");
+  const statusSelect = tr.querySelector(".status-select");
+  const manageBtn = tr.querySelector(".manage-btn");
+  const saveBtn = tr.querySelector(".save-btn");
+  const cancelBtn = tr.querySelector(".cancel-btn");
+  
+  if (!isManaging) {
+    // Enter manage mode
+    statusPill.style.display = "none";
+    statusSelect.style.display = "block";
+    manageBtn.style.display = "none";
+    saveBtn.style.display = "inline-block";
+    cancelBtn.style.display = "inline-block";
+  } else {
+    // Exit manage mode
+    statusPill.style.display = "inline-flex";
+    statusSelect.style.display = "none";
+    manageBtn.style.display = "inline-block";
+    saveBtn.style.display = "none";
+    cancelBtn.style.display = "none";
+  }
+}
+
+function cancelManageMode(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) return;
+  
+  // Reset select to original value
+  const statusSelect = tr.querySelector(".status-select");
+  const statusPill = tr.querySelector(".status-pill");
+  const originalStatus = statusPill.textContent.trim();
+  statusSelect.value = originalStatus;
+  
+  // Exit manage mode
+  toggleManageMode(id);
+}
+
+async function saveStatus(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) return;
+  
+  const statusSelect = tr.querySelector(".status-select");
+  const newStatus = statusSelect.value;
+  const statusPill = tr.querySelector(".status-pill");
+  
+  try {
+    await fetch(`/applications/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-CSRF-Token": meta("csrf-token"),
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    
+    // Update the pill with new status and class
+    statusPill.textContent = newStatus;
+    statusPill.className = `status-pill ${statusClass(newStatus)}`;
+    
+    // Exit manage mode
+    toggleManageMode(id);
+    
+    // Reload sankey to reflect changes
+    await loadSankey();
+  } catch (err) {
+    console.error("[status update] failed:", err);
+    alert("Failed to update status. Please try again.");
+  }
 }
 
 // ---------- reveal ----------
@@ -350,7 +420,6 @@ function enableReveal() {
 
 // ---------- sankey ----------
 const SANKEY_NODE_COLORS = {
-  Applications: "#3b82f6",
   Applied: "#4b73eb",
   Round1: "#a855f7",
   Round2: "#de13d7",
@@ -405,12 +474,12 @@ async function loadSankey() {
       {
         type: "sankey",
         orientation: "h",
-        arrangement: "snap",
+        arrangement: "fixed",
         node: {
           label: nodes,
           color: nodeColors,
-          pad: 18,
-          thickness: 18,
+          pad: 20,
+          thickness: 20,
           line: { color: "rgba(230,232,236,0.7)", width: 1 },
         },
         link: {
@@ -426,14 +495,15 @@ async function loadSankey() {
     const layout = {
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
-      margin: { l: 12, r: 12, t: 10, b: 10 },
+      margin: { l: 100, r: 30, t: 30, b: 30 },
       font: {
         family:
           "Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
         size: 13,
         color: "#12141a",
       },
-      height: 420,
+      height: 450,
+      autosize: true
     };
 
     await Plotly.react(el, plotData, layout, { displayModeBar: false });
@@ -469,4 +539,12 @@ document.addEventListener("turbo:load", boot);
 document.addEventListener("turbo:render", boot);
 document.addEventListener("DOMContentLoaded", boot);
 
-Object.assign(window, { loadApps, loadSankey, boot });
+Object.assign(window, { 
+  loadApps, 
+  loadSankey, 
+  boot, 
+  toggleManageMode, 
+  cancelManageMode, 
+  saveStatus,
+  statusClass
+});

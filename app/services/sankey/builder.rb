@@ -13,7 +13,9 @@ module Sankey
 
       rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
 
-      nodes = [ "Applications", "Applied" ] + rounds + [ "Offer", "Accepted", "Declined", "Ghosted" ]
+      # Only include status nodes, no "Applications" node
+      all_statuses = ["Applied"] + rounds + ["Interview", "Offer", "Accepted", "Declined", "Ghosted"]
+      nodes = all_statuses.uniq
       idx   = nodes.each_with_index.to_h
 
       counts = Hash.new(0)
@@ -32,19 +34,23 @@ module Sankey
         path = canonical_path(a.history, a.status)
 
         path.each_cons(2) do |u, v|
+          # Skip if source is "Applications" (we removed it)
+          next if u == "Applications"
+          
           cls =
-            if u == "Applications" && v == "Applied"               then "apps_to_applied"
-            elsif u == "Applications" && v.start_with?("Round")    then "apps_to_round"
-            elsif u == "Applications" && v == "Ghosted"            then "apps_to_ghosted"
-            elsif u == "Applied" && v.start_with?("Round")         then "applied_to_round"
-            elsif u == "Applied" && v == "Offer"                   then "applied_to_offer"
-            elsif u == "Applied" && v == "Ghosted"                 then "applied_to_ghosted"
+            if u == "Applied" && v.start_with?("Round")         then "applied_to_round"
+            elsif u == "Applied" && v == "Interview"           then "applied_to_interview"
+            elsif u == "Applied" && v == "Offer"               then "applied_to_offer"
+            elsif u == "Applied" && v == "Ghosted"             then "applied_to_ghosted"
             elsif u.start_with?("Round") && v.start_with?("Round") then "round_to_round"
-            elsif u.start_with?("Round") && v == "Offer"           then "round_to_offer"
-            elsif u.start_with?("Round") && v == "Ghosted"         then "round_to_ghosted"
-            elsif u == "Offer" && v == "Accepted"                  then "offer_to_accepted"
-            elsif u == "Offer" && v == "Declined"                  then "offer_to_declined"
-            elsif u == "Offer" && v == "Ghosted"                   then "offer_to_ghosted"
+            elsif u.start_with?("Round") && v == "Interview"   then "round_to_interview"
+            elsif u.start_with?("Round") && v == "Offer"       then "round_to_offer"
+            elsif u.start_with?("Round") && v == "Ghosted"     then "round_to_ghosted"
+            elsif u == "Interview" && v == "Offer"             then "interview_to_offer"
+            elsif u == "Interview" && v == "Ghosted"           then "interview_to_ghosted"
+            elsif u == "Offer" && v == "Accepted"               then "offer_to_accepted"
+            elsif u == "Offer" && v == "Declined"               then "offer_to_declined"
+            elsif u == "Offer" && v == "Ghosted"                then "offer_to_ghosted"
             else "other"
             end
 
@@ -65,16 +71,20 @@ module Sankey
     end
 
     def self.canonical_path(history, current_status)
-      path = [ "Applications" ]
+      # Start from Applied, not Applications
+      path = []
       hist = Array(history).map { |h| stage_label(h["status"]) }.compact
 
+      # Always start with Applied if not in history
       path << "Applied" unless hist.include?("Applied")
 
+      # Add history statuses in order, avoiding duplicates
       hist.each do |lab|
-        next if lab == "Applications"
+        next if lab == "Applications" # Skip Applications node
         path << lab unless path.include?(lab)
       end
 
+      # Add current status if it's a final status
       cur = stage_label(current_status)
       if [ "Offer", "Accepted", "Declined", "Ghosted" ].include?(cur)
         path << cur unless path.last == cur

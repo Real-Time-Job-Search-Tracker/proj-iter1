@@ -14,16 +14,16 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 88px; /* 7 cells * 10px + 6 gaps * 3px = ~88px */
+    height: 130px; /* 7 cells * 16px + 6 gaps * 3px = ~130px */
     padding-top: 25px; /* Offset for month labels */
     padding-right: 5px;
-    font-size: 10px;
+    font-size: 11px;
     color: #656d76;
     line-height: 1;
   }
   
   .weekday-label {
-    height: 10px; /* Match cell height */
+    height: 16px; /* Match cell height */
     display: flex;
     align-items: center;
   }
@@ -64,9 +64,9 @@
 
   /* Individual Day Cell */
   .day-cell {
-    width: 11px;
-    height: 11px;
-    border-radius: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
     background-color: #ebedf0; /* GitHub empty color */
     box-sizing: border-box;
     border: 1px solid rgba(27, 31, 35, 0.06);
@@ -110,10 +110,38 @@
   }
 
   .chart-card h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 800;
     margin-bottom: 1.5rem;
     color: #24292f;
+  }
+
+  /* View toggle buttons */
+  .view-toggle-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .view-toggle-btn:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+  
+  .view-toggle-btn.active {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #ffffff;
+    border-color: transparent;
+  }
+  
+  .view-container {
+    margin-top: 1rem;
   }
 
   @media (max-width: 900px) {
@@ -225,14 +253,31 @@
   </div>
 
   <div class="section card">
-    <div class="panel-header"><h2>Applications</h2></div>
-    <div class="table-wrap">
-       <table id="apps-table">
-         <thead>
-           <tr><th>Applied on</th><th>Company</th><th>Title</th><th>Status</th><th>Actions</th></tr>
-         </thead>
-         <tbody id="apps-body"></tbody>
-       </table>
+    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <h2 style="margin:0;">Applications</h2>
+        <button id="edit-all-btn" class="edit-all-btn" onclick="window.toggleEditAllMode()" title="Edit all applications">
+          <span class="edit-icon">✏️</span>
+          <span class="edit-text" style="font-size:12px; margin-left:4px;">Edit</span>
+        </button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="view-table-btn" class="view-toggle-btn active" onclick="switchView('table')">Table</button>
+        <button id="view-chart-btn" class="view-toggle-btn" onclick="switchView('chart')">Chart</button>
+      </div>
+    </div>
+    <div id="table-view" class="view-container">
+      <div class="table-wrap">
+         <table id="apps-table">
+           <thead>
+             <tr><th>Company</th><th>Applied on</th><th>Link</th><th>Status</th></tr>
+           </thead>
+           <tbody id="apps-body"></tbody>
+         </table>
+      </div>
+    </div>
+    <div id="chart-view" class="view-container" style="display:none;">
+      <div id="applications-chart" style="width: 100%; height: 400px;"></div>
     </div>
   </div>
 
@@ -250,7 +295,210 @@
     renderStatusDonut();
     renderGitHubHeatmap();
     reloadApplications(); // Your existing list loader
+    renderApplicationsChart(); // Initialize chart view
   });
+  
+  // View switching function
+  function switchView(view) {
+    const tableView = document.getElementById('table-view');
+    const chartView = document.getElementById('chart-view');
+    const tableBtn = document.getElementById('view-table-btn');
+    const chartBtn = document.getElementById('view-chart-btn');
+    
+    if (view === 'table') {
+      tableView.style.display = 'block';
+      chartView.style.display = 'none';
+      tableBtn.classList.add('active');
+      chartBtn.classList.remove('active');
+    } else {
+      tableView.style.display = 'none';
+      chartView.style.display = 'block';
+      chartBtn.classList.add('active');
+      tableBtn.classList.remove('active');
+      renderApplicationsChart(); // Re-render chart when switching
+    }
+  }
+  
+  // Toggle edit all mode
+  function toggleEditAllMode() {
+    const btn = document.getElementById('edit-all-btn');
+    const isEditMode = window.editAllMode || false;
+    window.editAllMode = !isEditMode;
+    
+    const allRows = document.querySelectorAll('#apps-body tr');
+    allRows.forEach(tr => {
+      if (tr.dataset.id) {
+        if (!isEditMode) {
+          // Enter edit mode
+          tr.classList.add('edit-mode');
+          tr.querySelectorAll('.cell-display').forEach(el => el.style.display = 'none');
+          tr.querySelectorAll('.cell-edit').forEach(el => {
+            el.style.display = 'block';
+            if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
+              el.style.width = '100%';
+              el.style.padding = '4px 8px';
+              el.style.border = '1px solid #d1d5db';
+              el.style.borderRadius = '4px';
+            }
+          });
+        } else {
+          // Exit edit mode
+          tr.classList.remove('edit-mode');
+          tr.querySelectorAll('.cell-display').forEach(el => el.style.display = '');
+          tr.querySelectorAll('.cell-edit').forEach(el => el.style.display = 'none');
+        }
+      }
+    });
+    
+    // Update button
+    if (!isEditMode) {
+      btn.innerHTML = '<span class="edit-icon">💾</span><span class="edit-text" style="font-size:12px; margin-left:4px;">Save</span>';
+      btn.title = "Save all changes";
+    } else {
+      // Save all changes
+      saveAllChanges();
+      btn.innerHTML = '<span class="edit-icon">✏️</span><span class="edit-text" style="font-size:12px; margin-left:4px;">Edit</span>';
+      btn.title = "Edit all applications";
+    }
+  }
+  
+  // Save all changes
+  async function saveAllChanges() {
+    const allRows = document.querySelectorAll('#apps-body tr[data-id]');
+    const updates = [];
+    
+    for (const tr of allRows) {
+      const id = tr.dataset.id;
+      const originalData = JSON.parse(tr.dataset.originalData || '{}');
+      const newData = {};
+      
+      // Collect changed fields
+      tr.querySelectorAll('.cell-edit').forEach(input => {
+        const field = input.dataset.field;
+        const newValue = input.value;
+        if (field && newValue !== originalData[field]) {
+          newData[field] = newValue;
+        }
+      });
+      
+      if (Object.keys(newData).length > 0) {
+        updates.push({ id, data: newData });
+      }
+    }
+    
+    // Save all updates
+    for (const update of updates) {
+      try {
+        await fetch(`/applications/${update.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "",
+          },
+          body: JSON.stringify(update.data),
+        });
+      } catch (err) {
+        console.error(`[save row ${update.id}] failed:`, err);
+      }
+    }
+    
+    // Reload data
+    if (updates.length > 0) {
+      reloadApplications();
+      if (window.loadSankey) {
+        window.loadSankey();
+      }
+    }
+  }
+  
+  // statusClass function (needed for board view)
+  function statusClass(status) {
+    const s = (status || "").toLowerCase();
+    if (s.includes("offer")) return "status-offer";
+    if (s.includes("declin") || s.includes("reject")) return "status-declined";
+    if (s.includes("ghost")) return "status-ghosted";
+    if (s.includes("interview") || s.startsWith("round")) return "status-interview";
+    if (s.includes("accept")) return "status-accepted";
+    return "status-applied";
+  }
+  
+  // Make functions globally available
+  window.toggleEditAllMode = toggleEditAllMode;
+  window.saveAllChanges = saveAllChanges;
+  window.statusClass = statusClass;
+  
+  // Render applications board view (grouped by status)
+  function renderApplicationsChart() {
+    const container = document.getElementById('applications-chart');
+    if (!container) return;
+    
+    // Use allApplications if available, otherwise fall back to FAKE_JOBS
+    const apps = (typeof allApplications !== 'undefined' && allApplications.length > 0) 
+      ? allApplications 
+      : (window.FAKE_JOBS || []);
+    
+    if (apps.length === 0) {
+      container.innerHTML = "<div class='muted' style='text-align:center; padding-top:150px;'>No applications to display</div>";
+      return;
+    }
+    
+    // Group by status
+    const statusGroups = {
+      'Applied': [],
+      'Round1': [],
+      'Round2': [],
+      'Interview': [],
+      'Offer': [],
+      'Accepted': [],
+      'Declined': [],
+      'Ghosted': []
+    };
+    
+    apps.forEach(app => {
+      const status = app.status || 'Applied';
+      if (statusGroups[status]) {
+        statusGroups[status].push(app);
+      } else {
+        statusGroups['Applied'].push(app);
+      }
+    });
+    
+    // Create board layout
+    const boardHTML = `
+      <div class="board-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; padding: 1rem;">
+        ${Object.keys(statusGroups).map(status => {
+          const statusApps = statusGroups[status];
+          if (statusApps.length === 0) return '';
+          
+          return `
+            <div class="board-column" style="background: #f9fafb; border-radius: 8px; padding: 1rem; min-height: 200px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e5e7eb;">
+                <span class="status-pill ${statusClass(status)}">${status}</span>
+                <span style="font-size: 12px; color: #6b7280;">${statusApps.length}</span>
+              </div>
+              <div class="board-cards" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                ${statusApps.map(app => {
+                  const appliedOn = app.applied_on || (app.created_at ? app.created_at.slice(0, 10) : '—');
+                  const linkDisplay = app.url ? (app.url.length > 40 ? app.url.substring(0, 40) + '...' : app.url) : '—';
+                  return `
+                    <div class="board-card" style="background: white; border-radius: 6px; padding: 0.75rem; border: 1px solid #e5e7eb; cursor: pointer;" onclick="window.open('${app.url || '#'}', '_blank')">
+                      <div style="font-weight: 600; margin-bottom: 0.5rem; color: #111827;">${app.company || 'Unknown'}</div>
+                      <div style="font-size: 12px; color: #6b7280; margin-bottom: 0.25rem;">${app.title || ''}</div>
+                      <div style="font-size: 11px; color: #9ca3af; margin-bottom: 0.5rem;">${appliedOn}</div>
+                      ${app.url ? `<div style="font-size: 11px; color: #6366f1; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${app.url}">${linkDisplay}</div>` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    
+    container.innerHTML = boardHTML;
+  }
 
   // --- Logic for Status Donut Chart (Plotly) ---
   function renderStatusDonut() {
@@ -283,7 +531,7 @@
 
     const layout = {
       autosize: true,
-      margin: { t: 10, b: 10, l: 10, r: 10 }, 
+      margin: { t: 10, b: 50, l: 10, r: 10 }, 
       paper_bgcolor: "rgba(0,0,0,0)",
       font: { family: 'Manrope, sans-serif', size: 14 }
     };
@@ -318,12 +566,19 @@
     // Left Column: Weekdays
     const weekdaysCol = document.createElement('div');
     weekdaysCol.className = 'heatmap-weekdays';
-    // Positions match the grid: Mon(1), Wed(3), Fri(5)
-    // We use spacers or specific margins. GitHub simply puts labels roughly aligned.
+    // Calculate positions: cell height (16px) + gap (3px) = 19px per row
+    // Mon is row 1 (index 1), Wed is row 3 (index 3), Fri is row 5 (index 5)
+    // Plus 25px padding-top for month labels
+    const cellHeight = 16;
+    const gap = 3;
+    const rowHeight = cellHeight + gap;
+    const monPos = 25 + (1 * rowHeight) - (cellHeight / 2); // Center of row 1
+    const wedPos = 25 + (3 * rowHeight) - (cellHeight / 2); // Center of row 3
+    const friPos = 25 + (5 * rowHeight) - (cellHeight / 2); // Center of row 5
     weekdaysCol.innerHTML = `
-      <div class="weekday-label" style="margin-top: 14px;">Mon</div>
-      <div class="weekday-label" style="margin-top: 14px;">Wed</div>
-      <div class="weekday-label" style="margin-top: 14px;">Fri</div>
+      <div class="weekday-label" style="margin-top: ${monPos}px;">Mon</div>
+      <div class="weekday-label" style="margin-top: ${wedPos}px;">Wed</div>
+      <div class="weekday-label" style="margin-top: ${friPos}px;">Fri</div>
     `;
     wrapper.appendChild(weekdaysCol);
 
@@ -358,7 +613,7 @@
         monthLabel.textContent = currentMonthName;
         // Calculate left position based on week index * (cell width + gap)
         // 11px cell + 3px gap = 14px per column
-        monthLabel.style.left = `${w * 14}px`; 
+        monthLabel.style.left = `${w * 19}px`; // 16px cell + 3px gap = 19px per column 
         monthsRow.appendChild(monthLabel);
       }
 
@@ -418,6 +673,22 @@
         currentPage = 1;
         populateMonthFilter();
         renderApplicationsFiltered();
+        // Update chart if chart view is active
+        const chartView = document.getElementById('chart-view');
+        if (chartView && chartView.style.display !== 'none') {
+          renderApplicationsChart();
+        }
+        
+        // Restore edit mode if it was active
+        if (window.editAllMode) {
+          setTimeout(() => {
+            const btn = document.getElementById('edit-all-btn');
+            if (btn) {
+              btn.click();
+              btn.click(); // Toggle twice to re-enter edit mode
+            }
+          }, 100);
+        }
       })
       .catch(e => console.error(e));
   }
@@ -430,28 +701,103 @@
   let pageSize = 20;
   let currentPage = 1;
   
-  function populateMonthFilter() { /* ... keep existing ... */ }
-  function renderApplicationsFiltered() { /* ... keep existing ... */ }
-  function renderApplicationsPage() { /* ... keep existing ... */ }
-  function renderApplications(rows) { 
-    const tbody = document.getElementById("apps-body");
-    if(!tbody) return;
-    tbody.innerHTML = "";
-    if(!rows.length) { tbody.innerHTML = "<tr><td colspan='6' class='muted'>No applications</td></tr>"; return; }
-    
-    rows.forEach(app => {
-      const tr = document.createElement("tr");
-      // Simplified render for brevity, ensure you copy your FULL render logic back if replacing
-      tr.innerHTML = `
-        <td>${app.applied_on || "—"}</td>
-        <td>${app.company}</td>
-        <td>${app.title}</td>
-        <td><span class="status-pill">${app.status}</span></td>
-        <td>Actions</td>
-        <td>${app.url ? `<a href="${app.url}" target="_blank">View</a>` : "—"}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+  function populateMonthFilter() { 
+    // Filter logic can be added here if needed
+  }
+  
+  function renderApplicationsFiltered() {
+    // Use the renderFilteredApps from application.js if available
+    if (window.renderFilteredApps) {
+      window.renderFilteredApps();
+    } else {
+      // Fallback: render directly
+      const tbody = document.getElementById("apps-body");
+      if (!tbody) return;
+      
+      const apps = allApplications || [];
+      if (!apps.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">No applications yet</td></tr>';
+        return;
+      }
+      
+      const isEditMode = window.editAllMode || false;
+      
+      apps.forEach(row => {
+        const appliedOn = row.applied_on || (row.created_at ? row.created_at.slice(0, 10) : "");
+        const linkDisplay = row.url ? (row.url.length > 30 ? row.url.substring(0, 30) + '...' : row.url) : '—';
+        
+        const tr = document.createElement("tr");
+        tr.dataset.id = row.id;
+        tr.dataset.originalData = JSON.stringify({
+          company: row.company || '',
+          applied_on: appliedOn,
+          url: row.url || '',
+          status: row.status || 'Applied'
+        });
+        
+        tr.innerHTML = `
+          <td class="company-cell">
+            <span class="cell-display">${row.company ?? ""}</span>
+            <input type="text" class="cell-edit" value="${row.company ?? ""}" style="display:none;" data-field="company">
+          </td>
+          <td class="date-cell">
+            <span class="cell-display">${appliedOn || "—"}</span>
+            <input type="date" class="cell-edit" value="${appliedOn || ""}" style="display:none;" data-field="applied_on">
+          </td>
+          <td class="link-cell">
+            ${row.url
+              ? `<a href="${row.url}" target="_blank" rel="noopener noreferrer" class="table-link-btn cell-display" title="${row.url}">${linkDisplay}</a>`
+              : '<span class="cell-display">—</span>'
+            }
+            <input type="url" class="cell-edit" value="${row.url || ""}" style="display:none;" data-field="url" placeholder="https://...">
+          </td>
+          <td class="status-cell">
+            <span class="status-pill ${statusClass(row.status || "Applied")} cell-display">
+              ${row.status || "Applied"}
+            </span>
+            <select class="status-select cell-edit" data-id="${row.id}" style="display:none;" data-field="status">
+              ${buildStatusOptionsHTML(row.status || "Applied")}
+            </select>
+          </td>
+        `;
+        
+        if (isEditMode) {
+          tr.classList.add('edit-mode');
+          tr.querySelectorAll('.cell-display').forEach(el => el.style.display = 'none');
+          tr.querySelectorAll('.cell-edit').forEach(el => {
+            el.style.display = 'block';
+            if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
+              el.style.width = '100%';
+              el.style.padding = '4px 8px';
+              el.style.border = '1px solid #d1d5db';
+              el.style.borderRadius = '4px';
+            }
+          });
+        }
+        
+        tbody.appendChild(tr);
+      });
+    }
+  }
+  
+  function buildStatusOptionsHTML(current) {
+    const options = [
+      "Applied",
+      "Round1",
+      "Round2",
+      "Interview",
+      "Offer",
+      "Accepted",
+      "Declined",
+      "Ghosted",
+    ];
+    return options
+      .map((opt) => {
+        const selected =
+          (current || "").toLowerCase() === opt.toLowerCase() ? "selected" : "";
+        return `<option value="${opt}" ${selected}>${opt}</option>`;
+      })
+      .join("");
   }
   // (Include rest of your JS helpers here)
 </script>
