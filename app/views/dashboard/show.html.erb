@@ -34,58 +34,57 @@
     </div>
 
     <%= form_with url: applications_path,
-              method: :post,
-              id: "new_application",
-              data: { turbo: false },
-              html: { class: "app-form-inline" } do %>
+                  method: :post,
+                  id: "new_application",
+                  data: { turbo: false },
+                  html: { class: "app-form-inline" } do %>
 
-        <div class="fld url">
-            <label for="application_url">
-            Final apply URL <span class="app-label-hint">(Paste a job URL)</span>
-            </label>
-            <%= text_field_tag "application[url]",
-                "",
-                id: "application_url",
-                type: "url",
-                placeholder: "Paste a job URL (Lever/Greenhouse/…)",
-                class: "app-input" %>
-        </div>
+      <div class="fld url">
+        <label for="application_url">
+          Final apply URL <span class="app-label-hint">(Paste a job URL)</span>
+        </label>
+        <%= text_field_tag "application[url]",
+              "",
+              id: "application_url",
+              type: "url",
+              placeholder: "Paste a job URL (Lever/Greenhouse/…)",
+              class: "app-input" %>
+      </div>
 
-        <div class="fld status">
-            <label for="application_status">Status</label>
-            <%= select_tag "application[status]",
-                options_for_select(
-                    %w[Applied Round1 Round2 Interview Offer Accepted Declined Ghosted],
-                    "Applied"
-                ),
-                id: "application_status",
-                class: "app-input" %>
-        </div>
+      <div class="fld status">
+        <label for="application_status">Status</label>
+        <%= select_tag "application[status]",
+              options_for_select(
+                %w[Applied Round1 Round2 Interview Offer Accepted Declined Ghosted],
+                "Applied"
+              ),
+              id: "application_status",
+              class: "app-input" %>
+      </div>
 
-        <div class="fld company">
-            <label for="application_company">
-            Company <span class="app-label-hint">(optional)</span>
-            </label>
-            <%= text_field_tag "application[company]",
-                "",
-                id: "application_company",
-                class: "app-input-sm" %>
-        </div>
+      <div class="fld company">
+        <label for="application_company">
+          Company <span class="app-label-hint">(optional)</span>
+        </label>
+        <%= text_field_tag "application[company]",
+              "",
+              id: "application_company",
+              class: "app-input-sm" %>
+      </div>
 
-        <div class="fld title">
-            <label for="application_title">
-            Title <span class="app-label-hint">(optional)</span>
-            </label>
-            <%= text_field_tag "application[title]",
-                "",
-                id: "application_title",
-                class: "app-input-sm" %>
-        </div>
+      <div class="fld title">
+        <label for="application_title">
+          Title <span class="app-label-hint">(optional)</span>
+        </label>
+        <%= text_field_tag "application[title]",
+              "",
+              id: "application_title",
+              class: "app-input-sm" %>
+      </div>
 
-        <%= submit_tag "Add Application", class: "btn small-add" %>
+      <%= submit_tag "Add Application", class: "btn small-add" %>
 
-        <% end %>
-
+    <% end %>
 
     <div class="msg" id="msg"></div>
   </div>
@@ -98,7 +97,29 @@
   <div class="section card">
     <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
       <h2 style="margin:0">Applications</h2>
-      <span id="countLabel" class="muted"></span>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span id="countLabel" class="muted"></span>
+
+        <select id="statusFilter" class="status-filter">
+          <option value="">All statuses</option>
+          <option value="Applied">Applied</option>
+          <option value="Round1">Round1</option>
+          <option value="Round2">Round2</option>
+          <option value="Interview">Interview</option>
+          <option value="Offer">Offer</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Declined">Declined</option>
+          <option value="Ghosted">Ghosted</option>
+        </select>
+
+        <select id="monthFilter" class="status-filter">
+          <option value="">All months</option>
+        </select>
+
+        <button type="button" id="manageToggle" class="btn small-add">
+          Manage
+        </button>
+      </div>
     </div>
 
     <ul id="applications" style="display:none;">
@@ -110,11 +131,25 @@
       <% end %>
     </ul>
 
-    <div class="table-wrap" style="margin-top:1rem">
-      <table>
+    <div id="bulkDeleteBar"
+        style="display:none;justify-content:flex-end;gap:0.5rem;margin-top:0.5rem;">
+      <button
+        type="button"
+        id="bulkDeleteBtn"
+        class="row-delete-btn"
+        onclick="handleBulkDelete()">
+        Delete selected
+      </button>
+    </div>
+
+
+    <div class="table-wrap" style="margin-top:0.5rem">
+      <table id="apps-table">
         <thead>
           <tr>
+            <th id="manageHeader" style="width:32px;display:none;"></th>
             <th>Company</th>
+            <th>Applied on</th>
             <th>Job posting</th>
             <th>Status</th>
             <th>Actions</th>
@@ -123,16 +158,126 @@
         <tbody id="apps-body"></tbody>
       </table>
     </div>
+
+    <div id="paginationBar"
+         style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;">
+      <span id="pageInfo" class="muted"></span>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="muted" style="font-size:0.85rem;">Rows per page</span>
+        <select id="pageSize" class="status-filter">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="0">All</option>
+        </select>
+        <button type="button" id="prevPage" class="btn small-add" style="padding-inline:0.75rem;">
+          ‹
+        </button>
+        <button type="button" id="nextPage" class="btn small-add" style="padding-inline:0.75rem;">
+          ›
+        </button>
+      </div>
+    </div>
   </div>
 
 </div>
 
+
 <script>
   window.FAKE_JOBS = <%= raw((@jobs || []).to_json) %>;
 
+  let allApplications = [];
+  let filteredApplications = [];
+  let currentStatusFilter = "";
+  let currentMonthFilter = "";
+  let managingState = false;
+  let pageSize = 20;
+  let currentPage = 1;
+
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("dashboard JS loaded");
+
+    const statusFilter   = document.getElementById("statusFilter");
+    const monthFilter    = document.getElementById("monthFilter");
+    const manageToggle   = document.getElementById("manageToggle");
+    const pageSizeSelect = document.getElementById("pageSize");
+    const prevPageBtn    = document.getElementById("prevPage");
+    const nextPageBtn    = document.getElementById("nextPage");
+    const bulkDeleteBtn  = document.getElementById("bulkDeleteBtn");
+
+    if (statusFilter) {
+      statusFilter.addEventListener("change", () => {
+        currentStatusFilter = statusFilter.value;
+        currentPage = 1;
+        renderApplicationsFiltered();
+      });
+    }
+
+    if (monthFilter) {
+      monthFilter.addEventListener("change", () => {
+        currentMonthFilter = monthFilter.value;
+        currentPage = 1;
+        renderApplicationsFiltered();
+      });
+    }
+
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener("change", () => {
+        const v = parseInt(pageSizeSelect.value, 10);
+        pageSize = isNaN(v) ? 20 : v;
+        currentPage = 1;
+        renderApplicationsFiltered();
+      });
+    }
+
+    if (manageToggle) {
+      manageToggle.addEventListener("click", () => {
+        managingState = !managingState;
+        updateManageUI();
+        renderApplicationsPage();
+      });
+    }
+
+    if (bulkDeleteBtn) {
+      // This is the important binding
+      bulkDeleteBtn.addEventListener("click", handleBulkDelete);
+      console.log("bulkDeleteBtn listener attached");
+    }
+
+    if (prevPageBtn) {
+      prevPageBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage -= 1;
+          renderApplicationsPage();
+        }
+      });
+    }
+
+    if (nextPageBtn) {
+      nextPageBtn.addEventListener("click", () => {
+        const total = filteredApplications.length;
+        const effectiveSize = pageSize && pageSize > 0 ? pageSize : total || 1;
+        const totalPages = Math.max(1, Math.ceil(total / effectiveSize));
+        if (currentPage < totalPages) {
+          currentPage += 1;
+          renderApplicationsPage();
+        }
+      });
+    }
+
     reloadApplications();
   });
+
+  function extractDate(app) {
+    if (app.applied_on) return app.applied_on;
+    if (app.created_at) return app.created_at.slice(0, 10);
+    return "";
+  }
+
+  function extractMonth(app) {
+    const d = extractDate(app);
+    return d ? d.slice(0, 7) : "";
+  }
 
   function reloadApplications() {
     fetch("/applications.json", { headers: { "Accept": "application/json" } })
@@ -141,24 +286,152 @@
         return r.json();
       })
       .then((rows) => {
-        renderApplications(rows);
+        allApplications = Array.isArray(rows) ? rows : (rows.applications || []);
+        currentPage = 1;
+        populateMonthFilter();
+        renderApplicationsFiltered();
       })
       .catch((e) => console.error("Failed to load applications", e));
   }
 
-  function renderApplications(rows) {
-    const tbody = document.getElementById("apps-body");
+  function populateMonthFilter() {
+    const monthFilter = document.getElementById("monthFilter");
+    if (!monthFilter) return;
+
+    const prev = monthFilter.value;
+    const monthsSet = new Set();
+
+    allApplications.forEach((app) => {
+      const m = extractMonth(app);
+      if (m) monthsSet.add(m);
+    });
+
+    const months = Array.from(monthsSet).sort();
+    monthFilter.innerHTML = '<option value="">All months</option>';
+    months.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      monthFilter.appendChild(opt);
+    });
+
+    if (prev && months.includes(prev)) {
+      monthFilter.value = prev;
+      currentMonthFilter = prev;
+    } else {
+      currentMonthFilter = "";
+    }
+  }
+
+  function renderApplicationsFiltered() {
+    let rows = allApplications;
+
+    if (currentStatusFilter) {
+      const target = currentStatusFilter.toLowerCase();
+      rows = rows.filter(
+        (app) => (app.status || "").toLowerCase() === target
+      );
+    }
+
+    if (currentMonthFilter) {
+      rows = rows.filter(
+        (app) => extractMonth(app) === currentMonthFilter
+      );
+    }
+
+    filteredApplications = rows;
+    renderApplicationsPage();
+  }
+
+  function renderApplicationsPage() {
+    const total = filteredApplications.length;
     const countLabel = document.getElementById("countLabel");
+    const pageInfo = document.getElementById("pageInfo");
+    const prevPageBtn = document.getElementById("prevPage");
+    const nextPageBtn = document.getElementById("nextPage");
+
+    if (countLabel) {
+      countLabel.textContent = total === 1 ? "1 item" : `${total} items`;
+    }
+
+    if (!total) {
+      renderApplications([]);
+      if (pageInfo) pageInfo.textContent = "";
+      if (prevPageBtn) prevPageBtn.disabled = true;
+      if (nextPageBtn) nextPageBtn.disabled = true;
+      return;
+    }
+
+    const effectiveSize = pageSize && pageSize > 0 ? pageSize : total;
+    const totalPages = Math.max(1, Math.ceil(total / effectiveSize));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * effectiveSize;
+    const end = start + effectiveSize;
+    const pageRows =
+      pageSize && pageSize > 0
+        ? filteredApplications.slice(start, end)
+        : filteredApplications.slice();
+
+    renderApplications(pageRows);
+
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+    if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+    if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages;
+  }
+
+  function renderApplications(rows) {
+    const tbody        = document.getElementById("apps-body");
+    const table        = document.getElementById("apps-table");
+    const manageHeader = document.getElementById("manageHeader");
+
     if (!tbody) return;
 
     tbody.innerHTML = "";
 
+    if (manageHeader) {
+      manageHeader.style.display = managingState ? "" : "none";
+    }
+    if (table) {
+      table.dataset.managing = managingState ? "1" : "0";
+    }
+
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = managingState ? 6 : 5;
+      td.className = "muted";
+      td.textContent = "No applications yet";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
     rows.forEach((app) => {
       const tr = document.createElement("tr");
+
+      if (managingState) {
+        const tdSelect = document.createElement("td");
+        tdSelect.style.textAlign = "center";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "row-select";
+        cb.dataset.id = app.id;
+        tdSelect.appendChild(cb);
+        tr.appendChild(tdSelect);
+      }
 
       const tdCompany = document.createElement("td");
       tdCompany.textContent = app.company || "(unknown company)";
       tr.appendChild(tdCompany);
+
+      const tdDate = document.createElement("td");
+      const d = extractDate(app);
+      tdDate.textContent = d || "—";
+      tr.appendChild(tdDate);
 
       const tdLink = document.createElement("td");
       if (app.url) {
@@ -188,7 +461,16 @@
       const select = document.createElement("select");
       select.className = "status-select";
 
-      const options = ["Applied", "Round1", "Round2", "Interview", "Offer", "Accepted", "Declined", "Ghosted"];
+      const options = [
+        "Applied",
+        "Round1",
+        "Round2",
+        "Interview",
+        "Offer",
+        "Accepted",
+        "Declined",
+        "Ghosted",
+      ];
       options.forEach((opt) => {
         const o = document.createElement("option");
         o.value = opt;
@@ -203,27 +485,13 @@
         updateApplicationStatus(app.id, select.value);
       });
 
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.className = "row-delete-btn";
-      delBtn.textContent = "Delete";
-      delBtn.addEventListener("click", () => {
-        if (confirm("Delete this application?")) {
-          deleteApplication(app.id);
-        }
-      });
-
       tdActions.appendChild(select);
-      tdActions.appendChild(delBtn);
       tr.appendChild(tdActions);
 
       tbody.appendChild(tr);
     });
 
-    if (countLabel) {
-      const n = rows.length || 0;
-      countLabel.textContent = n === 1 ? "1 item" : `${n} items`;
-    }
+    toggleManageCheckboxVisibility();
   }
 
   function statusClass(status) {
@@ -235,15 +503,41 @@
     return "status-applied";
   }
 
+  function updateManageUI() {
+    const bulkBar      = document.getElementById("bulkDeleteBar");
+    const manageHeader = document.getElementById("manageHeader");
+    const manageToggle = document.getElementById("manageToggle");
+
+    if (bulkBar)      bulkBar.style.display      = managingState ? "flex" : "none";
+    if (manageHeader) manageHeader.style.display = managingState ? "" : "none";
+    if (manageToggle) manageToggle.textContent   = managingState ? "Done" : "Manage";
+
+    if (!managingState) {
+      document.querySelectorAll(".row-select").forEach((cb) => {
+        cb.checked = false;
+      });
+    }
+
+    toggleManageCheckboxVisibility();
+  }
+
+  function toggleManageCheckboxVisibility() {
+    const checkboxes = document.querySelectorAll(".row-select");
+    checkboxes.forEach((cb) => {
+      cb.style.display = managingState ? "" : "none";
+      if (!managingState) cb.checked = false;
+    });
+  }
+
   function updateApplicationStatus(id, status) {
     if (!id) return;
     fetch(`/applications/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status }),
     })
       .then((r) => {
         if (!r.ok && r.status !== 204) throw r;
@@ -262,6 +556,9 @@
         if (!r.ok && r.status !== 204) throw r;
         window.location.reload();
       })
-      .catch((e) => console.error("Delete failed", e));
+      .catch((e) => {
+        console.error("Bulk delete failed", e);
+        alert("Bulk delete failed (see console for details)");
+      });
   }
 </script>
