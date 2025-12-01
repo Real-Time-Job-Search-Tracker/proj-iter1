@@ -3,7 +3,9 @@ class JobApplication < ApplicationRecord
 
   belongs_to :user, optional: true
 
-  validates :url, presence: true, uniqueness: true
+  validates :url,
+            presence: true,
+            uniqueness: { scope: :user_id }
   validates :company, :title, presence: true
 
   before_create do

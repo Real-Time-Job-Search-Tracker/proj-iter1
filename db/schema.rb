@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_204022) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_01_234334) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -49,7 +49,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_204022) do
     t.datetime "updated_at", null: false
     t.string "url", null: false
     t.integer "user_id"
-    t.index ["url"], name: "index_job_applications_on_url", unique: true
+    t.index ["user_id", "url"], name: "index_job_applications_on_user_id_and_url", unique: true
     t.index ["user_id"], name: "index_job_applications_on_user_id"
   end
 
