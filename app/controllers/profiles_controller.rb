@@ -8,7 +8,7 @@ class ProfilesController < ApplicationController
   def update
     @user = current_user
     if @user.update(profile_params)
-      redirect_to dashboard_path, notice: "Profile updated"
+      redirect_to profile_path, notice: "Profile updated"
     else
       flash.now[:alert] = @user.errors.full_messages.to_sentence
       render :show, status: :unprocessable_entity

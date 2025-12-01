@@ -1010,6 +1010,7 @@ tr.edit-mode {
 
 .toast-notice {
   border: 2px solid #4f7fff;
+  white-space: nowrap;
 }
 
 .toast-alert {
