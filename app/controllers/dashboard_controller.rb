@@ -1,29 +1,25 @@
 class DashboardController < ApplicationController
   def show
     if signed_in? && current_user
-      @demo_mode   = false
-      @apps        = current_user.job_applications.order(created_at: :desc)
-      @application = current_user.job_applications.new
+      @demo_mode = false
+
+      base = current_user.job_applications
+
+      # list on page
+      @apps        = base.order(created_at: :desc)
+      @application = base.new
       @sankey_data = Sankey::Builder.call(@apps)
 
-      # ✅ 1. Status Distribution Data (Real)
-      # Group by status and count them. Returns { "Applied" => 5, "Offer" => 1, ... }
-      @status_data = @apps.group(:status).count
-
-      # ✅ 2. Activity Heatmap Data (Real)
-      # Group by applied_on date. Returns { "2023-11-01" => 2, ... }
-      @heatmap_data = @apps.group(:applied_on).count
-
+      # charts – no ORDER BY created_at leaking in
+      @status_data  = base.group(:status).count
+      @heatmap_data = base.group(:applied_on).count
     else
-      @demo_mode = true
-      @apps = generate_demo_data
+      @demo_mode   = true
+      @apps        = generate_demo_data
       @sankey_data = Sankey::Builder.call(@apps)
       @application = JobApplication.new
 
-      # ✅ 1. Status Distribution Data (Demo)
-      @status_data = @apps.group_by(&:status).transform_values(&:count)
-
-      # ✅ 2. Activity Heatmap Data (Demo)
+      @status_data  = @apps.group_by(&:status).transform_values(&:count)
       @heatmap_data = @apps.group_by { |a| a.applied_on.to_s }.transform_values(&:count)
     end
   end
