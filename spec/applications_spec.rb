@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Applications", type: :request do
   let!(:user) { User.create!(username: "alice", email: "alice@example.com", password: "password", password_confirmation: "password") }
-  
+
   # Helper to login with correct params
   def login_user
     post sign_in_path, params: { email_or_username: user.email, password: "password" }
@@ -13,13 +13,13 @@ RSpec.describe "Applications", type: :request do
       it "returns persisted rows" do
         login_user
         JobApplication.create!(user: user, url: "https://ex.com/a", company: "ACME", title: "SWE")
-        
+
         get "/applications.json"
-        
+
         expect(response).to have_http_status(:ok)
         body = JSON.parse(response.body)
         rows = body.is_a?(Hash) && body["applications"] ? body["applications"] : body
-        
+
         expect(rows.any? { |h| h["company"] == "ACME" }).to be true
       end
     end
@@ -71,7 +71,7 @@ RSpec.describe "Applications", type: :request do
        # Fix: Mock response object that responds to success?
        double_response = double(body: "<html></html>", success?: true)
        allow(HTTParty).to receive(:get).with(any_args).and_return(double_response)
-       
+
        # Just testing that it doesn't raise error
        ctrl = ApplicationsController.new
        expect { ctrl.send(:parse_job_page, "http://ex.com") }.not_to raise_error

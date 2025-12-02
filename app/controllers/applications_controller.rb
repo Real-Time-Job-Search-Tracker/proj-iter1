@@ -29,7 +29,7 @@ class ApplicationsController < ApplicationController
           "company"    => h["company"] || h[:company],
           "title"      => h["title"] || h[:title],
           "status"     => h["status"] || h[:status],
-          "applied_on" => (h["applied_on"] || Date.today).to_s,
+          "applied_on" => (h["applied_on"] || Date.today).to_s
         }
       end
 
@@ -40,7 +40,7 @@ class ApplicationsController < ApplicationController
           "company"    => h["company"] || h[:company],
           "title"      => h["title"] || h[:title],
           "status"     => h["status"] || h[:status],
-          "applied_on" => (h["applied_on"] || h[:applied_on] || Date.today).to_s,
+          "applied_on" => (h["applied_on"] || h[:applied_on] || Date.today).to_s
         }
       end
 
@@ -305,7 +305,7 @@ class ApplicationsController < ApplicationController
         "title"      => title,
         "status"     => status,
         "history"    => history,
-        "applied_on" => Date.today.to_s,
+        "applied_on" => Date.today.to_s
       }
     end
   end

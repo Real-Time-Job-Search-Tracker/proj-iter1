@@ -29,6 +29,6 @@ RSpec.describe "Dashboard", type: :request do
       end
     end
   end
-  
+
   # Note: Removed GET /stats test because data is now embedded in the show page
 end

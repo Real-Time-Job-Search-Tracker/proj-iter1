@@ -31,14 +31,14 @@ class DashboardController < ApplicationController
   private
 
   def generate_demo_data
-    require 'ostruct'
+    require "ostruct"
     companies = %w[Google Meta Netflix Amazon Spotify Uber Airbnb ByteDance]
-    titles    = ["Software Engineer", "Product Manager", "Data Scientist", "Designer"]
-    
+    titles    = [ "Software Engineer", "Product Manager", "Data Scientist", "Designer" ]
+
     50.times.map do |i|
       chain = build_random_history_chain
       current_status = chain.last["status"]
-      
+
       # Generate random dates within the last year for the heatmap
       random_date = Date.today - rand(0..365).days
 
@@ -57,7 +57,7 @@ class DashboardController < ApplicationController
 
   # ... (build_random_history_chain stays the same) ...
   def build_random_history_chain
-    chain = [{ "status" => "Applied", "changed_at" => 1.month.ago }]
+    chain = [ { "status" => "Applied", "changed_at" => 1.month.ago } ]
     if rand > 0.3
       chain << { "status" => "Round1", "changed_at" => 3.weeks.ago }
       if rand > 0.4

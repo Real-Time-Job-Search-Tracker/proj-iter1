@@ -12,8 +12,8 @@ RSpec.describe "Sign in", type: :system do
 
     fill_in "email_or_username", with: user.email
     fill_in "password", with: user.password
-    
-    click_button "Sign In" 
+
+    click_button "Sign In"
 
     expect(page).to have_content("Dashboard")
   end
@@ -23,7 +23,7 @@ RSpec.describe "Sign in", type: :system do
 
     fill_in "email_or_username", with: "wrong@example.com"
     fill_in "password", with: "wrong"
-    
+
     click_button "Sign In"
 
     # Fix: Check raw HTML body instead of rendered content

@@ -9,7 +9,7 @@ Rails.application.routes.draw do
 
   # PROFILE
   resource :profile,
-           only: [:show, :update],
+           only: [ :show, :update ],
            controller: "profiles"
 
   patch "/profile/password",
@@ -26,7 +26,7 @@ Rails.application.routes.draw do
                           defaults: { format: :json }
 
   # JOBS
-  resources :jobs, only: [:index]
+  resources :jobs, only: [ :index ]
   get "/jobs/preview", to: "jobs#preview", defaults: { format: :json }
   get "/jobs/inspect", to: "jobs#inspect", as: :inspect_job
 
@@ -35,7 +35,7 @@ Rails.application.routes.draw do
 
   # APPLICATIONS
   resources :applications,
-            only: [:index, :create, :update, :destroy, :new, :edit]
+            only: [ :index, :create, :update, :destroy, :new, :edit ]
 
   get "/applications/stats",
       to: "applications#stats",

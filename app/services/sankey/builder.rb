@@ -14,7 +14,7 @@ module Sankey
       rounds = round_labels.to_a.sort_by { |x| x[/\d+/].to_i.nonzero? || 1 }
 
       # Only include status nodes, no "Applications" node
-      all_statuses = ["Applied"] + rounds + ["Interview", "Offer", "Accepted", "Declined", "Ghosted"]
+      all_statuses = [ "Applied" ] + rounds + [ "Interview", "Offer", "Accepted", "Declined", "Ghosted" ]
       nodes = all_statuses.uniq
       idx   = nodes.each_with_index.to_h
 
@@ -36,7 +36,7 @@ module Sankey
         path.each_cons(2) do |u, v|
           # Skip if source is "Applications" (we removed it)
           next if u == "Applications"
-          
+
           cls =
             if u == "Applied" && v.start_with?("Round")         then "applied_to_round"
             elsif u == "Applied" && v == "Interview"           then "applied_to_interview"

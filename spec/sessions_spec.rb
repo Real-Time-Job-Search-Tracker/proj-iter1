@@ -26,12 +26,12 @@ RSpec.describe "Sessions", type: :request do
     it "logs out and redirects to root" do
       # Login first
       post sign_in_path, params: { email_or_username: "alice@example.com", password: "password" }
-      
+
       # Then logout
       delete sign_out_path
-      
+
       # Fix: Expect redirect to root_path (/) instead of sign_in_path
-      expect(response).to redirect_to(root_path) 
+      expect(response).to redirect_to(root_path)
       follow_redirect!
       expect(response.body).to include("Signed out")
     end
