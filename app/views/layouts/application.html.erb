@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <%= csrf_meta_tags %>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title><%= content_for?(:title) ? yield(:title) : "Job Tracker" %></title>
+  <title><%= content_for?(:title) ? yield(:title) : "FlowTrack" %></title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,35 +13,77 @@
   <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
   <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.35.2/plotly.min.js"></script>
-
 </head>
+
 <body class="app">
-  <header class="nav glass">
-    <div class="brand">JobTracker<span class="dot">•</span></div>
-    <nav class="nav-actions">
-      <%= link_to "Overview", root_path %>
-      <% if signed_in? %>
-        <%= button_to "Sign out",
-              sign_out_path,
-              method: :delete,
-              form: { class: "inline-form" },
-              class: "nav-link as-link" %>
-      <% else %>
-        <%= button_to "Sign in",
-              sign_in_path,
-              method: :get,
-              form: { class: "inline-form" },
-              class: "nav-link as-link" %>
+<header class="nav glass">
+  <%= link_to root_path, class: "brand", style: "text-decoration:none; color:inherit;" do %>
+    JobTracker<span class="dot">•</span>
+  <% end %>
+
+  <nav class="nav-actions">
+    <!-- bell with badge -->
+    <div class="nav-bell">
+      <button class="nav-icon-btn" type="button">🔔</button>
+      <span class="nav-badge">0</span>
+    </div>
+
+    <!-- progress pill (NOT clickable) -->
+    <div class="nav-progress-pill">
+      <span class="nav-progress-main">
+        <span class="nav-progress-icon">📋</span>
+        <span class="nav-count">
+          <%= header_application_count %>/<%= current_user&.daily_goal || 11 %>
+        </span>
+      </span>
+
+      <div class="nav-tooltip">
+        <span class="nav-tooltip-icon">?</span>
+        <div class="nav-tooltip-text">
+          Daily application goal: <%= current_user&.daily_goal || 11 %>.<br/>
+          Edit in your profile.
+        </div>
+      </div>
+    </div>
+
+    <% if signed_in? %>
+      <%= link_to profile_path, class: "nav-avatar nav-avatar-link" do %>
+        <% if current_user.avatar.attached? %>
+          <%= image_tag current_user.avatar,
+                        class: "nav-avatar-image" %>
+        <% else %>
+          <div class="nav-avatar-circle"></div>
+        <% end %>
+
+        <span class="nav-avatar-name">
+          Hi, <%= current_user.username %>
+        </span>
       <% end %>
-    </nav>
-  </header>
 
-  <%= render "layouts/flash" %>
+      <%= button_to "Sign out",
+            sign_out_path,
+            method: :delete,
+            form: { class: "inline-form" },
+            class: "nav-button" %>
+    <% else %>
+      <div class="nav-avatar">
+        <div class="nav-avatar-circle"></div>
+        <span class="nav-avatar-name">
+          Hi, Guest
+        </span>
+      </div>
 
-  <main class="container">
-    <%= yield %>
-  </main>
+      <%= link_to "Sign in", sign_in_path, class: "nav-link" %>
+    <% end %>
+  </nav>
+</header>
 
-  <footer class="footer">© <%= Time.current.year %> JobTracker</footer>
+<%= render "layouts/flash" %>
+
+<main class="container">
+  <%= yield %>
+</main>
+
+<footer class="footer">© <%= Time.current.year %> JobTracker</footer>
 </body>
 </html>
