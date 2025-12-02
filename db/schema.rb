@@ -59,7 +59,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_234334) do
     t.integer "daily_goal"
     t.string "default_job_title"
     t.string "email"
-    t.string "name"
     t.string "password_digest"
     t.string "student_track"
     t.datetime "updated_at", null: false

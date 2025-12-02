@@ -8,7 +8,7 @@ class ProfilesController < ApplicationController
   def update
     @user = current_user
     if @user.update(profile_params)
-      redirect_to profile_path, notice: "Profile updated"
+      redirect_to root_path, notice: "Profile updated"
     else
       flash.now[:alert] = @user.errors.full_messages.to_sentence
       render :show, status: :unprocessable_entity
@@ -42,7 +42,7 @@ class ProfilesController < ApplicationController
 
   def profile_params
     params.require(:user).permit(
-      :name,
+      :username,
       :daily_goal,
       :student_track,
       :default_job_title,
