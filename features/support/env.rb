@@ -28,7 +28,7 @@ Capybara.javascript_driver = :selenium_chrome_headless
 
 # 使用 Puma 提升性能
 Capybara.server = :puma, { Silent: true }
-Capybara.default_max_wait_time = 3
+Capybara.default_max_wait_time = 5
 
 # WebMock：允许本地连接
 WebMock.disable_net_connect!(allow_localhost: true)
@@ -47,5 +47,6 @@ Cucumber::Rails::Database.javascript_strategy = :truncation
 
 # 在每个场景前重置浏览器 session
 Before do
+  Capybara.use_default_driver
   Capybara.reset_sessions!
 end

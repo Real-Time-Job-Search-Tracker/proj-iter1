@@ -15,17 +15,12 @@ end
 
 def sign_in(email:, password:)
   visit(sign_in_path)
+  expect(page).to have_css("form.auth-form", visible: true, wait: 5)
 
   within("form.auth-form") do
     fill_in("email_or_username", with: email)
     fill_in("password", with: password)
-
-    # prefer the button label if present; otherwise submit
-    if page.has_button?("🚀 Sign In", wait: 0)
-      click_button("🚀 Sign In")
-    else
-      find('button[type="submit"], input[type="submit"]').click
-    end
+    click_button("🚀 Sign In")
   end
 end
 
