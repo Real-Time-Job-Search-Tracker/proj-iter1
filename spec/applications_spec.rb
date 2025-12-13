@@ -112,7 +112,7 @@ RSpec.describe ApplicationsController, type: :controller do
         rel = instance_double("ActiveRecord::Relation")
         allow(rel).to receive(:exists?).and_return(true)
         allow(rel).to receive(:map).and_return([
-          { "status" => "Offer", "history" => [{ "status" => "Applied", "ts" => "2024-01-01T00:00:00Z" }] }
+          { "status" => "Offer", "history" => [ { "status" => "Applied", "ts" => "2024-01-01T00:00:00Z" } ] }
         ])
         allow(user).to receive(:job_applications).and_return(rel)
 
@@ -128,10 +128,10 @@ RSpec.describe ApplicationsController, type: :controller do
     context "guest" do
       it "builds sankey from fake + guest session rows" do
         allow(controller).to receive(:load_fake_jobs).and_return([
-          { "status" => "Applied", "history" => [{ "status" => "Applied", "ts" => "2024-01-01T00:00:00Z" }] }
+          { "status" => "Applied", "history" => [ { "status" => "Applied", "ts" => "2024-01-01T00:00:00Z" } ] }
         ])
         session[:guest_apps] = [
-          { "status" => "Offer", "history" => [{ "status" => "Round1", "ts" => "2024-01-02T00:00:00Z" }] }
+          { "status" => "Offer", "history" => [ { "status" => "Round1", "ts" => "2024-01-02T00:00:00Z" } ] }
         ]
 
         get :stats, format: :json
@@ -245,7 +245,7 @@ RSpec.describe ApplicationsController, type: :controller do
     context "guest" do
       it "stores in session and returns created json" do
         allow(controller).to receive(:signed_in?).and_return(false)
-        allow(controller).to receive(:load_fake_jobs).and_return([{ "id" => 1, "url" => "https://ex.com/base" }])
+        allow(controller).to receive(:load_fake_jobs).and_return([ { "id" => 1, "url" => "https://ex.com/base" } ])
 
         post :create, params: { url: "https://ex.com/new", company: "Co", title: "T", status: "Round1" }, format: :json
 
@@ -334,14 +334,14 @@ RSpec.describe ApplicationsController, type: :controller do
 
     context "guest" do
       it "returns 404 when not found" do
-        session[:guest_apps] = [{ "id" => 1, "url" => "https://ex.com/a", "company" => "A" }]
+        session[:guest_apps] = [ { "id" => 1, "url" => "https://ex.com/a", "company" => "A" } ]
         patch :update, params: { id: 999, title: "X" }, format: :json
         expect(response).to have_http_status(404)
         expect(json["error"]).to eq("not found")
       end
 
       it "updates status + appends history when status present" do
-        session[:guest_apps] = [{ "id" => 1, "status" => "Applied", "history" => [] }]
+        session[:guest_apps] = [ { "id" => 1, "status" => "Applied", "history" => [] } ]
         patch :update, params: { id: 1, status: "Offer" }, format: :json
 
         expect(response).to have_http_status(:ok)
@@ -351,7 +351,7 @@ RSpec.describe ApplicationsController, type: :controller do
       end
 
       it "updates other attributes when status not present" do
-        session[:guest_apps] = [{ "id" => 1, "company" => "A", "title" => "T", "url" => "x" }]
+        session[:guest_apps] = [ { "id" => 1, "company" => "A", "title" => "T", "url" => "x" } ]
         patch :update, params: { id: 1, company: "B", applied_on: "2024-01-01" }, format: :json
 
         expect(response).to have_http_status(:ok)
@@ -402,7 +402,7 @@ RSpec.describe ApplicationsController, type: :controller do
 
         delete :destroy, params: { id: 1 }, format: :json
         expect(response).to have_http_status(:no_content)
-        expect(session[:guest_apps].map { |h| h["id"] }).to eq([2])
+        expect(session[:guest_apps].map { |h| h["id"] }).to eq([ 2 ])
       end
     end
   end
@@ -494,14 +494,14 @@ RSpec.describe ApplicationsController, type: :controller do
 
       # array payload
       allow(File).to receive(:exist?).and_return(true)
-      allow(File).to receive(:read).and_return([{ url: "https://www.google.com", company: "", title: "", status: "" }].to_json)
+      allow(File).to receive(:read).and_return([ { url: "https://www.google.com", company: "", title: "", status: "" } ].to_json)
       out = controller.send(:load_fake_jobs)
       expect(out).to be_an(Array)
       expect(out.first["company"]).to eq("Google") # inferred
       expect(out.first["title"]).to eq("(unknown title)")
 
       # hash payload with "history" array
-      allow(File).to receive(:read).and_return({ "history" => [{ "url" => "https://jobs.lever.co/openai/x" }] }.to_json)
+      allow(File).to receive(:read).and_return({ "history" => [ { "url" => "https://jobs.lever.co/openai/x" } ] }.to_json)
       out2 = controller.send(:load_fake_jobs)
       expect(out2.first["company"]).to eq("Openai")
 

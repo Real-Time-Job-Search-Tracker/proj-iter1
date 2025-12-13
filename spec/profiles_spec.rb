@@ -42,7 +42,7 @@ RSpec.describe ProfilesController, type: :controller do
 
     it "renders 422 and sets flash.now alert when update fails" do
       allow(user).to receive(:update).and_return(false)
-      allow(user).to receive_message_chain(:errors, :full_messages).and_return(["Bad stuff"])
+      allow(user).to receive_message_chain(:errors, :full_messages).and_return([ "Bad stuff" ])
 
       patch :update, params: { user: { username: "anything" } }
 
@@ -105,7 +105,7 @@ RSpec.describe ProfilesController, type: :controller do
       # Pass authenticate, then force update failure
       allow(user).to receive(:authenticate).and_return(true)
       allow(user).to receive(:update).and_return(false)
-      allow(user).to receive_message_chain(:errors, :full_messages).and_return(["Update failed"])
+      allow(user).to receive_message_chain(:errors, :full_messages).and_return([ "Update failed" ])
 
       patch :update_password, params: {
         current_password: "Password123!",

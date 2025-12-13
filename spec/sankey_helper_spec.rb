@@ -38,7 +38,7 @@ RSpec.describe "Sankey builder" do
       expect(result).to include(:nodes, :links)
       nodes = result[:nodes]
       expect(nodes).to be_an(Array)
-      #expect(nodes).to include("Applications", "Applied")
+      # expect(nodes).to include("Applications", "Applied")
       expect(nodes).to include("Applied")
       expect(nodes).to include("Round1", "Offer", "Accepted")
 
@@ -56,10 +56,10 @@ RSpec.describe "Sankey builder" do
 
       # There should be a flow from Applications -> Applied
       edges = links[:source].zip(links[:target], links[:value], links[:cls])
-      #apps_to_applied = edges.find { |s, t, _v, _c| s == idx["Applications"] && t == idx["Applied"] }
+      # apps_to_applied = edges.find { |s, t, _v, _c| s == idx["Applications"] && t == idx["Applied"] }
       applied_idx = idx["Applied"]
-      #expect(apps_to_applied).to be_present
-      #expect(apps_to_applied[2]).to be >= 1  # value
+      # expect(apps_to_applied).to be_present
+      # expect(apps_to_applied[2]).to be >= 1  # value
       applied_edges = edges.select { |s, _t, _, _| s == applied_idx }
       expect(applied_edges).not_to be_empty
 

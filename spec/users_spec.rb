@@ -34,7 +34,7 @@ RSpec.describe UsersController, type: :controller do
     it "renders 422 and sets flash.now alert when save fails" do
       # Avoid guessing validations by forcing save failure
       fake_errors = instance_double("ActiveModel::Errors")
-      allow(fake_errors).to receive(:full_messages).and_return(["Invalid email"])
+      allow(fake_errors).to receive(:full_messages).and_return([ "Invalid email" ])
 
       allow_any_instance_of(User).to receive(:save).and_return(false)
       allow_any_instance_of(User).to receive(:errors).and_return(fake_errors)
