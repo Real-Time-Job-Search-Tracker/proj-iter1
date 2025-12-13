@@ -8,5 +8,6 @@ Feature: Sign out
 
   Scenario: Successful sign out
     When I sign out
-    Then I should see "Signed out"
+    Then I should be signed out
+    And I should see "Signed out"
     And I should be on the sign in page
