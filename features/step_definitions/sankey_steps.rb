@@ -1,6 +1,44 @@
 require "json"
 require "securerandom"
 
+def parsed_sankey_json
+  JSON.parse(page.text)
+end
+
+def sankey_nodes(data)
+  data["nodes"] || data.dig("data", "nodes") || []
+end
+
+def sankey_links_as_objects(data)
+  links = data["links"] || data.dig("data", "links")
+
+  # Case 1: already an array of objects
+  return links if links.is_a?(Array)
+
+  # Case 2: columnar hash of arrays (Plotly style)
+  if links.is_a?(Hash)
+    sources = links["source"] || links[:source] || []
+    targets = links["target"] || links[:target] || []
+    values  = links["value"]  || links[:value]  || []
+    clss    = links["cls"]    || links[:cls]    || []
+
+    n = [ sources.length, targets.length, values.length, clss.length ].max
+
+    return (0...n).map do |i|
+      {
+        "source" => sources[i],
+        "target" => targets[i],
+        "value"  => values[i],
+        "cls"    => clss[i]
+      }
+    end
+  end
+
+  raise RSpec::Expectations::ExpectationNotMetError,
+        "Expected 'links' to be an Array or a Hash-of-arrays, got: #{links.inspect}"
+end
+
+
 Given("an application exists for {string} in stage {string}") do |company, stage|
   JobApplication.create!(
     url:     "https://example.com/#{company.parameterize}",
@@ -13,18 +51,16 @@ end
 
 
 When("I request the sankey JSON") do
-  Capybara.current_driver = :rack_test
   page.driver.header 'Accept', 'application/json'
   visit sankey_api_path
 end
 
 Then("the JSON should include a sankey node for {string}") do |label|
-  data  = JSON.parse(page.text)
+  data  = parsed_sankey_json
+  nodes = sankey_nodes(data)
 
-  nodes = data["nodes"] || data.dig("data", "nodes")
   expect(nodes).to be_an(Array), "Expected 'nodes' to be an Array, got: #{nodes.inspect}"
 
-  # Accept either an array of strings, or an array of objects with a name-ish field
   has_label =
     nodes.include?(label) ||
     nodes.any? { |n| n.is_a?(Hash) && [ n["id"], n["name"], n["label"], n["title"] ].compact.include?(label) }
@@ -33,11 +69,13 @@ Then("the JSON should include a sankey node for {string}") do |label|
 end
 
 Then("the JSON should include at least 1 link") do
-  data  = JSON.parse(page.text)
-  links = data["links"] || data.dig("data", "links")
-  expect(links).to be_an(Array), "Expected 'links' to be an Array of objects, got: #{links.inspect}"
-  values = links.map { |l| l.is_a?(Hash) ? l["value"] || l[:value] : nil }.compact
-  expect(values.map(&:to_i).sum).to be >= 1
+  data  = parsed_sankey_json
+  links = sankey_links_as_objects(data)
+
+  expect(links).to be_an(Array), "Expected links to normalize to an Array, got: #{links.inspect}"
+
+  total = links.map { |l| (l["value"] || l[:value]).to_i }.sum
+  expect(total).to be >= 1, "Expected total link value >= 1, got: #{total} (links=#{links.inspect})"
 end
 
 Given("an application with history:") do |table|
@@ -68,11 +106,10 @@ Given("the current status of that application is {string}") do |status|
   @sankey_app.update!(status: status)
 end
 
-Then("the JSON should include a link class {string}") do |cls|
-  data  = JSON.parse(page.text)
-  links = data["links"] || data.dig("data", "links")
 
-  expect(links).to be_an(Array), "Expected 'links' to be an Array, got: #{links.inspect}"
+Then("the JSON should include a link class {string}") do |cls|
+  data  = parsed_sankey_json
+  links = sankey_links_as_objects(data)
 
   classes = links.map { |l| l["cls"] || l[:cls] }.compact
   expect(classes).to include(cls),

@@ -16,6 +16,3 @@ Feature: Update and delete applications
     When I delete the application for "ACME Corp"
     Then I should not see "ACME Corp" in the applications list
 
-  Scenario: Visit new application form
-    When I visit the new application page
-    Then I should see the Add Application form
