@@ -6,13 +6,14 @@ Feature: Sign in
   Background:
     Given a user exists with email "alice@example.com" and password "password"
 
-  Scenario: Successful sign in
+  Scenario: User signs in with valid credentials
     When I visit the sign in page
     And I sign in as "alice@example.com" with password "password"
-    Then I should see "Overview"
+    Then I should be on the dashboard page
+    And I should see "Hi, alice"
 
-  Scenario: Sign in fails with wrong password
+  Scenario: User cannot sign in with an invalid password
     When I visit the sign in page
     And I sign in as "alice@example.com" with password "wrong-password"
-    Then I should see "Invalid email or password"
+    Then I should see "Invalid email/username or password"
     And I should be on the sign in page
