@@ -8,7 +8,7 @@ end
 # Sends a standard HTML form submission (PATCH)
 When("I send a HTML PATCH request to {string} with params:") do |path, table|
   params = table.rows_hash
-  # FIXED: Use 'submit' method with :patch symbol. 
+  # FIXED: Use 'submit' method with :patch symbol.
   # 'page.driver.patch' does not exist in some driver versions.
   page.driver.submit(:patch, path, params)
 end

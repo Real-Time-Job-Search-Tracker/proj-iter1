@@ -11,19 +11,19 @@ def send_api_request(method, path, body = nil)
   # Mock external request if we are calling the preview endpoint with example.com
   if path.include?("example.com")
     stub_request(:get, "https://example.com/").
-      with(headers: {'User-Agent'=>'Mozilla/5.0'}).
+      with(headers: { 'User-Agent'=>'Mozilla/5.0' }).
       to_return(status: 200, body: "<html><title>Example Domain</title></html>", headers: {})
   end
 
   page.driver.header 'Accept', 'application/json'
   page.driver.header 'Content-Type', 'application/json'
-  
+
   if body
     page.driver.send(method, path, body)
   else
     page.driver.send(method, path)
   end
-  
+
   # Clean up headers
   page.driver.header 'Accept', nil
   page.driver.header 'Content-Type', nil

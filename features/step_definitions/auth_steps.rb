@@ -56,6 +56,6 @@ Then("I should be signed out") do
 end
 
 Then("I should be on the sign in page") do
-  expect([sign_in_path, "/"]).to include(page.current_path)
+  expect([ sign_in_path, "/" ]).to include(page.current_path)
   step %(I should be signed out)
 end

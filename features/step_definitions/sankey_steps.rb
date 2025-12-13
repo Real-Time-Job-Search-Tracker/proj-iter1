@@ -22,7 +22,7 @@ def sankey_links_as_objects(data)
     values  = links["value"]  || links[:value]  || []
     clss    = links["cls"]    || links[:cls]    || []
 
-    n = [sources.length, targets.length, values.length, clss.length].max
+    n = [ sources.length, targets.length, values.length, clss.length ].max
 
     return (0...n).map do |i|
       {
@@ -63,7 +63,7 @@ Then("the JSON should include a sankey node for {string}") do |label|
 
   has_label =
     nodes.include?(label) ||
-    nodes.any? { |n| n.is_a?(Hash) && [n["id"], n["name"], n["label"], n["title"]].compact.include?(label) }
+    nodes.any? { |n| n.is_a?(Hash) && [ n["id"], n["name"], n["label"], n["title"] ].compact.include?(label) }
 
   expect(has_label).to be(true), "Expected a node labeled #{label.inspect} in nodes=#{nodes.inspect}"
 end
