@@ -8,10 +8,11 @@ Feature: Dashboard overview
   @javascript
   Scenario: Visiting the dashboard
     When I visit the dashboard page
-    Then I should see "Overview"
+    Then I should see "Dashboard"
+    And I should see "Add an application"
 
   Scenario: Dashboard stats JSON
     Given an application exists for "ACME Corp" in stage "Applied"
-    When I request the dashboard stats JSON
+    When I request the applications stats JSON
     Then the response should be JSON
     And the JSON should include a node "Applied"
