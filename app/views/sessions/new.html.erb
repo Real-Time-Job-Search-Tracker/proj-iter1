@@ -26,15 +26,8 @@
       <div class="auth-divider">OR</div>
 
       <div class="auth-google">
-        <button class="auth-button google">G Sign in with Google</button>
+        <%= link_to "Sign Up", sign_up_path, class: "auth-button sign-up" %>
       </div>
-
-      <p class="auth-footer-text">
-        Don't have an account?
-        <%= link_to "Sign Up", sign_up_path, class: "auth-link" %>
-      </p>
-
     </div>
   </div>
-
 </div>
