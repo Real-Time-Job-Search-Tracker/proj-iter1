@@ -22,12 +22,6 @@
   <% end %>
 
   <nav class="nav-actions">
-    <!-- bell with badge -->
-    <div class="nav-bell">
-      <button class="nav-icon-btn" type="button">🔔</button>
-      <span class="nav-badge">0</span>
-    </div>
-
     <!-- progress pill (NOT clickable) -->
     <div class="nav-progress-pill">
       <span class="nav-progress-main">
@@ -38,9 +32,8 @@
       </span>
 
       <div class="nav-tooltip">
-        <span class="nav-tooltip-icon">?</span>
         <div class="nav-tooltip-text">
-          Daily application goal: <%= current_user&.daily_goal || 11 %>.<br/>
+          Daily application goal: <%= current_user&.daily_goal || 11 %><br/>
           Edit in your profile.
         </div>
       </div>
