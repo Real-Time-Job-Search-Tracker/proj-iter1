@@ -27,7 +27,7 @@ gem "image_processing", "~> 1.2"
 
 # Database adapters
 group :development, :test do
-  gem "sqlite3", "~> 2.1"
+  gem "sqlite3", "~> 2.8"
 end
 
 group :production do
