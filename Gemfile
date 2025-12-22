@@ -58,7 +58,7 @@ end
 
 # Test-only stack
 group :test do
-  gem "cucumber", "~> 10.0"
+  gem "cucumber", "~> 10.2"
   gem "cucumber-rails", require: false
   gem "capybara"
   gem "selenium-webdriver"
